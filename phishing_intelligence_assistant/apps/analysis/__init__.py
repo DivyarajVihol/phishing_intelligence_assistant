@@ -1,0 +1,1 @@
+"""Analysis Django application package."""

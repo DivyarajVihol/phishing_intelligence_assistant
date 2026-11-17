@@ -1,0 +1,122 @@
+/* Design tokens per docs/06_UI_GUIDELINES.md */
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1a1d23;
+  --muted: #5b6472;
+  --border: #dde1e7;
+  --accent: #2457d6;
+
+  /* Risk level tokens */
+  --risk-high-text: #b42318;
+  --risk-high-bg: #fdeceb;
+  --risk-medium-text: #b54708;
+  --risk-medium-bg: #fff4e5;
+  --risk-low-text: #0f766e;
+  --risk-low-bg: #e6f4f1;
+  --risk-inconclusive-text: #475467;
+  --risk-inconclusive-bg: #eef0f3;
+
+  /* Font stacks */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  /* Layout geometry */
+  --max-width: 960px;
+  --radius: 8px;
+}
+
+/* Layout and reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+/* Header layout */
+.app-header {
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.app-header .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-brand {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.app-nav {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.app-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.app-nav a:hover {
+  color: var(--accent);
+}
+
+/* Main content */
+.app-main {
+  min-height: 60vh;
+  margin-bottom: var(--space-5);
+}
+
+/* Footer layout */
+.app-footer {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+  color: var(--muted);
+  font-size: 0.85rem;
+  background-color: var(--surface);
+}
+
+.notice {
+  margin: 0;
+}
+
+/* Card container */
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+}
