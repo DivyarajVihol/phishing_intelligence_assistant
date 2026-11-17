@@ -42,3 +42,20 @@ SUSPICIOUS_TOKENS = (
 LEXICAL_MAX_URL_LENGTH = 100
 LEXICAL_MAX_SUBDOMAINS = 3
 
+# Well-known brands for impersonation/obfuscation checks (small starter list)
+BRAND_TOKENS = (
+    "paypal",
+    "google",
+    "microsoft",
+    "apple",
+    "amazon",
+    "netflix",
+    "facebook",
+    "instagram",
+    "whatsapp",
+    "dropbox",
+    "adobe",
+    "chase",
+)
+
+
