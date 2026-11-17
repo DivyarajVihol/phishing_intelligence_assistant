@@ -12,3 +12,33 @@ BLOCKED_SCHEMES = (
     "telnet",
     "gopher",
 )
+
+# Suspicious keyword tokens frequently observed in deceptive URLs
+SUSPICIOUS_TOKENS = (
+    "account",
+    "auth",
+    "banking",
+    "confirm",
+    "credential",
+    "ebayisapi",
+    "invoice",
+    "login",
+    "password",
+    "payment",
+    "recover",
+    "secure",
+    "security",
+    "signin",
+    "submit",
+    "support",
+    "update",
+    "verification",
+    "verify",
+    "wallet",
+    "webscr",
+)
+
+# Lexical heuristic thresholds
+LEXICAL_MAX_URL_LENGTH = 100
+LEXICAL_MAX_SUBDOMAINS = 3
+
