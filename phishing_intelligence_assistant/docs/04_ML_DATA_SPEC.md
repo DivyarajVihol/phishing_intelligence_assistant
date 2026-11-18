@@ -48,3 +48,10 @@ Report on validation, test, and time-based test: accuracy, precision, recall, F1
 
 ## Presenting the score
 Call it "model score". Do not present it as a calibrated probability unless calibration was evaluated.
+
+## Decisions made on 18-Nov-2026
+- **Standard library `csv` instead of pandas**: pandas 3.x is blocked by machine application-control policies, so data preparation uses the standard library `csv.DictReader` and `csv.DictWriter`.
+- **Registered-domain-only model**: Leakage analysis of raw PhiUSIIL URLs revealed structural leakage: 100.0% of legitimate URLs are bare homepages (`https://www.<domain>`) with 0.0% paths, 100.0% HTTPS, and 100.0% `www.`, whereas phishing URLs vary (27.2% path, 48.7% HTTPS, 41.4% `www.`, 54.4% non-www subdomain). Training on full URLs would result in shortcut learning on structural artifacts rather than domain reputation. The model is trained on lowercase `registered_domain` only.
+- **Hash-based domain split**: Domains are split deterministically via SHA-256 hash of the registered domain (first 8 hex digits as an integer modulo 100: < 70 train [70%], 70–84 validation [15%], >= 85 test [15%]), guaranteeing zero cross-split domain overlap.
+- **No time-based test**: The PhiUSIIL dataset contains no collection dates or timestamps; the time-based holdout evaluation is skipped.
+- **PhishTank not used**: PhishTank developer account registration was disabled on 18-Nov-2026, so only the documented PhiUSIIL dataset was utilized.
