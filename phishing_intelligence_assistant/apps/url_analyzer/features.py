@@ -97,3 +97,64 @@ def extract_features(parsed: ParsedURL) -> dict[str, float]:
         "hostname_entropy": _calculate_hostname_entropy(parsed.hostname),
     }
     return {name: features[name] for name in FEATURE_NAMES}
+
+
+DOMAIN_FEATURE_NAMES: list[str] = [
+    "length",
+    "digit_count",
+    "digit_ratio",
+    "hyphen_count",
+    "dot_count",
+    "char_entropy",
+    "longest_digit_run",
+    "longest_consonant_run",
+    "unique_char_ratio",
+]
+
+_CONSONANTS: frozenset[str] = frozenset("bcdfghjklmnpqrstvwxyz")
+
+
+def _longest_digit_run(s: str) -> float:
+    """Return the length of the longest consecutive sequence of digits."""
+    max_r = cur_r = 0
+    for c in s:
+        if c.isdigit():
+            cur_r += 1
+            if cur_r > max_r:
+                max_r = cur_r
+        else:
+            cur_r = 0
+    return float(max_r)
+
+
+def _longest_consonant_run(s: str) -> float:
+    """Return the length of the longest consecutive sequence of consonants."""
+    max_r = cur_r = 0
+    for c in s.lower():
+        if c in _CONSONANTS:
+            cur_r += 1
+            if cur_r > max_r:
+                max_r = cur_r
+        else:
+            cur_r = 0
+    return float(max_r)
+
+
+def domain_features(domain: str) -> dict[str, float]:
+    """Extract numeric features from registered-domain string alone."""
+    d = domain.lower()
+    d_len = max(len(d), 1)
+    d_count = float(sum(1 for c in d if c.isdigit()))
+    feats: dict[str, float] = {
+        "length": float(len(d)),
+        "digit_count": d_count,
+        "digit_ratio": d_count / d_len,
+        "hyphen_count": float(d.count("-")),
+        "dot_count": float(d.count(".")),
+        "char_entropy": _calculate_hostname_entropy(d),
+        "longest_digit_run": _longest_digit_run(d),
+        "longest_consonant_run": _longest_consonant_run(d),
+        "unique_char_ratio": float(len(set(d))) / d_len,
+    }
+    return {name: feats[name] for name in DOMAIN_FEATURE_NAMES}
+

@@ -1,0 +1,72 @@
+{
+  "model_name": "logistic_regression",
+  "version": "v1",
+  "trained_at": "2026-11-18T12:06:53.429961+00:00",
+  "python_version": "3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]",
+  "sklearn_version": "1.9.1",
+  "numpy_version": "2.5.5",
+  "DOMAIN_FEATURE_NAMES": [
+    "length",
+    "digit_count",
+    "digit_ratio",
+    "hyphen_count",
+    "dot_count",
+    "char_entropy",
+    "longest_digit_run",
+    "longest_consonant_run",
+    "unique_char_ratio"
+  ],
+  "threshold": 0.5578524969976524,
+  "input_type": "list of registered-domain strings",
+  "dataset_summary": {
+    "total_rows": 175387,
+    "rows_per_split": {
+      "train": 122620,
+      "validation": 26499,
+      "test": 26268
+    },
+    "rows_per_class": {
+      "benign": 131997,
+      "phishing": 43390
+    },
+    "dataset_csv_sha256": "543b5f719d8dd2871d5b90b8566f8e44afb732049396cc89c08e437c3f9a2374"
+  },
+  "metrics": {
+    "validation": {
+      "accuracy": 0.8165968527114231,
+      "precision": 0.6436271401395054,
+      "recall": 0.6085131894484412,
+      "f1": 0.6255778120184899,
+      "pr_auc": 0.718780880244966,
+      "roc_auc": 0.8324637536150531,
+      "confusion_matrix": [
+        [
+          17579,
+          2248
+        ],
+        [
+          2612,
+          4060
+        ]
+      ]
+    },
+    "test": {
+      "accuracy": 0.8181056799147252,
+      "precision": 0.6315194574519619,
+      "recall": 0.6104260964570002,
+      "f1": 0.6207936507936508,
+      "pr_auc": 0.7144033380173338,
+      "roc_auc": 0.8349137477844988,
+      "confusion_matrix": [
+        [
+          17579,
+          2282
+        ],
+        [
+          2496,
+          3911
+        ]
+      ]
+    }
+  }
+}

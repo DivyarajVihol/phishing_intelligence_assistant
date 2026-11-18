@@ -55,3 +55,11 @@ Call it "model score". Do not present it as a calibrated probability unless cali
 - **Hash-based domain split**: Domains are split deterministically via SHA-256 hash of the registered domain (first 8 hex digits as an integer modulo 100: < 70 train [70%], 70–84 validation [15%], >= 85 test [15%]), guaranteeing zero cross-split domain overlap.
 - **No time-based test**: The PhiUSIIL dataset contains no collection dates or timestamps; the time-based holdout evaluation is skipped.
 - **PhishTank not used**: PhishTank developer account registration was disabled on 18-Nov-2026, so only the documented PhiUSIIL dataset was utilized.
+
+## Phase 5 decisions
+- **Input type**: A list of lowercase registered-domain strings (`list[str]`), produced by `apps.ml_engine.predict.build_row(parsed)` and matched to `model_text` in the training dataset.
+- **Features**: Evaluated two feature sets:
+  1. Character n-gram TF-IDF (`analyzer="char"`, `ngram_range=(2, 5)`, `max_features=100000`, `class_weight="balanced"`).
+  2. Numerical domain features (`apps.url_analyzer.features.domain_features`: length, digit count and ratio, hyphen count, dot count, character entropy, longest digit run, longest consonant run, unique-character ratio) evaluated with Random Forest (`n_estimators=100`, `max_depth=20`, `min_samples_leaf=5`, `class_weight="balanced"`).
+- **Model comparison rule**: Models are compared and chosen based on validation split PR-AUC (Average Precision). Logistic Regression with character TF-IDF achieved PR-AUC 0.7188 (vs Random Forest 0.4614 and DummyClassifier baseline 0.2518) and was selected as `model-v1`.
+- **Decision threshold selection**: The decision threshold (`0.5579`) was selected on the validation split ONLY by maximizing F1 score via `precision_recall_curve`. The test split was never used for model selection or threshold tuning.
