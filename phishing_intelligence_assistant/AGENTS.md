@@ -18,6 +18,7 @@ Django web app: user submits a suspicious URL, gets an explainable investigation
 10. Security: never fetch submitted URLs in the MVP; never log or print secrets; all outbound calls have timeouts; tests never touch the network. URLhaus records are malware intelligence, never phishing labels.
 11. If anything is ambiguous or a contract looks wrong, **ask a short question** instead of guessing.
 12. On this Windows machine pip.exe is blocked. Always run python -m pip ... and python manage.py ... (the .venv is active). Never call pip directly.
+13. pandas 2.3.x works on this machine. Do not upgrade pandas to 3.x, because that version is blocked by an application-control policy.
 
 ## Workflow
 One phase at a time. Write tests with the code. Run `python manage.py test`. End with: files changed, test result, anything left undone. Then stop and wait.
