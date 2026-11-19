@@ -22,12 +22,12 @@ class TestPhishTankConnector(unittest.TestCase):
         }
 
     @patch("requests.post")
-    def test_lookup_match_when_in_db_and_verified(self, mock_post: MagicMock) -> None:
-        """Assert match when in_database and verified are both True."""
+    def test_lookup_match_when_in_db_and_verified_and_valid(self, mock_post: MagicMock) -> None:
+        """Assert match when in_database, verified, and valid are all True."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "results": {"in_database": True, "verified": True, "phish_id": 12345}
+            "results": {"in_database": True, "verified": True, "valid": True, "phish_id": 12345}
         }
         mock_post.return_value = mock_resp
 
@@ -40,6 +40,21 @@ class TestPhishTankConnector(unittest.TestCase):
         self.assertEqual(call_kwargs["data"]["url"], self.parsed.normalized)
         self.assertEqual(call_kwargs["data"]["app_key"], self.secret_key)
         self.assertEqual(call_kwargs["headers"]["User-Agent"], "test-agent/1.0")
+
+    @patch("requests.post")
+    def test_lookup_no_match_when_verified_true_but_valid_false(self, mock_post: MagicMock) -> None:
+        """Assert no_match when verified is True but valid is False (voters decided not phishing)."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "results": {"in_database": True, "verified": True, "valid": False, "phish_id": 12345}
+        }
+        mock_post.return_value = mock_resp
+
+        result = phishtank.lookup(self.parsed, self.settings)
+        self.assertEqual(result.source, "phishtank")
+        self.assertEqual(result.status, "no_match")
+        self.assertEqual(result.record_id, "12345")
 
     @patch("requests.post")
     def test_lookup_no_match_when_not_in_db_or_unverified(self, mock_post: MagicMock) -> None:

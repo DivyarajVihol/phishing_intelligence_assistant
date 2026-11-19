@@ -15,6 +15,36 @@ def _get_setting(settings: Any, key: str, default: Any = None) -> Any:
     return getattr(settings, key, default)
 
 
+def _handle_response(resp: requests.Response, now: datetime) -> ThreatLookup:
+    """Parse HTTP response and extract PhishTank ThreatLookup status."""
+    if resp.status_code in (429, 509):
+        return ThreatLookup(
+            source="phishtank", status="unavailable", queried_at=now, error=f"Rate limited (HTTP {resp.status_code})"
+        )
+    if resp.status_code != 200:
+        return ThreatLookup(
+            source="phishtank", status="unavailable", queried_at=now, error=f"HTTP {resp.status_code} error"
+        )
+
+    try:
+        data = resp.json()
+    except Exception:
+        return ThreatLookup(source="phishtank", status="unavailable", queried_at=now, error="Invalid JSON response")
+
+    results = data.get("results") if isinstance(data, dict) else None
+    if not isinstance(results, dict):
+        return ThreatLookup(source="phishtank", status="unavailable", queried_at=now, error="Malformed response data")
+
+    in_database = bool(results.get("in_database", False))
+    verified = bool(results.get("verified", False))
+    valid = bool(results.get("valid", False))
+    record_id = str(results.get("phish_id")) if results.get("phish_id") is not None else None
+
+    if in_database and verified and valid:
+        return ThreatLookup(source="phishtank", status="match", record_id=record_id, detail=results, queried_at=now)
+    return ThreatLookup(source="phishtank", status="no_match", record_id=record_id, detail=results, queried_at=now)
+
+
 def lookup(parsed: ParsedURL, settings: Any) -> ThreatLookup:
     """Query PhishTank API for URL status; never raises."""
     now = datetime.now(timezone.utc)
@@ -44,28 +74,4 @@ def lookup(parsed: ParsedURL, settings: Any) -> ThreatLookup:
     except Exception:
         return ThreatLookup(source="phishtank", status="unavailable", queried_at=now, error="Unexpected error")
 
-    if resp.status_code in (429, 509):
-        return ThreatLookup(
-            source="phishtank", status="unavailable", queried_at=now, error=f"Rate limited (HTTP {resp.status_code})"
-        )
-    if resp.status_code != 200:
-        return ThreatLookup(
-            source="phishtank", status="unavailable", queried_at=now, error=f"HTTP {resp.status_code} error"
-        )
-
-    try:
-        data = resp.json()
-    except Exception:
-        return ThreatLookup(source="phishtank", status="unavailable", queried_at=now, error="Invalid JSON response")
-
-    results = data.get("results") if isinstance(data, dict) else None
-    if not isinstance(results, dict):
-        return ThreatLookup(source="phishtank", status="unavailable", queried_at=now, error="Malformed response data")
-
-    in_database = bool(results.get("in_database", False))
-    verified = bool(results.get("verified", False))
-    record_id = str(results.get("phish_id")) if results.get("phish_id") is not None else None
-
-    if in_database and verified:
-        return ThreatLookup(source="phishtank", status="match", record_id=record_id, detail=results, queried_at=now)
-    return ThreatLookup(source="phishtank", status="no_match", record_id=record_id, detail=results, queried_at=now)
+    return _handle_response(resp, now)
