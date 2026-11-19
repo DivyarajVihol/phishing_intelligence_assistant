@@ -113,7 +113,7 @@ def _check_at_symbol(parsed: ParsedURL) -> list[Finding]:
 
 def _check_https(parsed: ParsedURL) -> list[Finding]:
     """Note missing HTTPS encryption as an informational finding."""
-    if parsed.scheme != "https":
+    if parsed.scheme != "https" and not parsed.scheme_assumed:
         return [
             Finding(
                 check_name="lexical.https_scheme",

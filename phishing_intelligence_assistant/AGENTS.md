@@ -21,4 +21,4 @@ Django web app: user submits a suspicious URL, gets an explainable investigation
 13. pandas 2.3.x works on this machine. Do not upgrade pandas to 3.x, because that version is blocked by an application-control policy.
 
 ## Workflow
-One phase at a time. Write tests with the code. Run `python manage.py test`. End with: files changed, test result, anything left undone. Then stop and wait.
+One phase at a time. Write tests with the code. Run `python manage.py test apps ml`. End with: files changed, test result, anything left undone. Then stop and wait.

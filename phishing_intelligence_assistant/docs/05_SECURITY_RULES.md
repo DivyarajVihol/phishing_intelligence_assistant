@@ -25,6 +25,7 @@ The app handles hostile URLs and makes outbound requests. Treat every URL as unt
 
 ## External lookups (PhishTank, URLhaus)
 - Always: connect/read timeout from `EXTERNAL_TIMEOUT_SECONDS` (default 5), no unbounded retries, descriptive `User-Agent` for PhishTank.
+- A PhishTank result is a match only when `in_database`, `verified` and `valid` are all true.
 - Handle: timeout, connection error, HTTP 4xx/5xx, HTTP 509 / rate limit, invalid key, malformed JSON. Each becomes `status="unavailable"` with a short non-secret `error`.
 - Keep the source's original fields in `detail`. Store source name, query time, status, record ID.
 - Cache results with `LOOKUP_CACHE_TTL_SECONDS`. Cache key is a hash of the normalized URL + source.

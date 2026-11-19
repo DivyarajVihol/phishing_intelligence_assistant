@@ -162,7 +162,26 @@ class TestRiskEngine(unittest.TestCase):
         assessment = assess(findings)
         self.assertEqual(assessment.level, rules.LEVEL_LOW_OBSERVED)
         self.assertEqual(assessment.score, 0)
-        self.assertIn("Low observed risk", assessment.summary)
+        self.assertEqual(
+            assessment.summary,
+            "Low observed risk: No suspicious indicators identified in completed checks (score 0/100).",
+        )
+
+    def test_flagged_finding_with_low_observed_risk_summary(self) -> None:
+        """Assert Low observed risk with flagged finding uses the partial-indicator summary."""
+        findings = [
+            Finding(check_name="lexical.subdomain", category="heuristic", status="flagged", severity="low", explanation="Subdomain"),
+            Finding(check_name="brand.check", category="heuristic", status="clear", severity="info", explanation="Clear"),
+            Finding(check_name="ml.check", category="ml", status="clear", severity="info", explanation="Clear"),
+            Finding(check_name="intel.phishtank", category="intel", status="clear", severity="info", explanation="Clear"),
+        ]
+        assessment = assess(findings)
+        self.assertEqual(assessment.level, rules.LEVEL_LOW_OBSERVED)
+        self.assertEqual(assessment.score, 2)
+        self.assertEqual(
+            assessment.summary,
+            "Low observed risk: some indicators were noted, but the combined score is low (score 2/100).",
+        )
 
     def test_worked_example(self) -> None:
         """Assert worked example: brand 15 + keyword 5 + ML 0.87@0.62 gives score 40, Medium risk."""

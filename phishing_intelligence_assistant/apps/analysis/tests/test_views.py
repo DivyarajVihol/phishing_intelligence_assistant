@@ -97,6 +97,65 @@ class TestAnalysisViews(TestCase):
         # Section 8: Limitation notice
         self.assertContains(response, LIMITATION_NOTICE)
 
+    @patch("apps.threat_intel.service.query_sources")
+    def test_result_threat_intel_no_match_with_record_id_and_ml_labels(
+        self, mock_query: MagicMock
+    ) -> None:
+        """Assert record ID on no_match shows clarification text and ML labels are formatted."""
+        mock_query.return_value = [
+            ThreatLookup(source="phishtank", status="no_match", record_id="99999"),
+            ThreatLookup(source="urlhaus", status="no_match"),
+        ]
+        investigation = analyse_url("https://example.com/test")
+
+        response = self.client.get(f"/result/{investigation.id}/")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+
+        # Record ID on no_match plain text
+        self.assertIn("<code>99999</code>", html)
+        self.assertIn("Reported to this source but not confirmed as phishing", html)
+        self.assertNotIn('href="99999"', html)
+
+        # ML label and note
+        self.assertIn("Not phishing-like", html)
+        self.assertIn(
+            "This model only looks at the domain name, so it can miss phishing hosted on shared platforms. It is a supporting signal only.",
+            html,
+        )
+        self.assertNotIn(">benign<", html)
+
+    def test_result_page_ml_phishing_like_label(self) -> None:
+        """Assert ML predicted_class phishing_like displays as Phishing-like."""
+        inv = Investigation.objects.create(
+            submitted_url="https://phish.target.com",
+            status="completed",
+            overall_level="high",
+            score=80,
+            summary="High risk.",
+        )
+        ParsedURLRecord.objects.create(
+            investigation=inv,
+            original="https://phish.target.com",
+            normalized="https://phish.target.com/",
+            scheme="https",
+            hostname="phish.target.com",
+            registered_domain="target.com",
+        )
+        MLPredictionRecord.objects.create(
+            investigation=inv,
+            model_name="domain-lr",
+            model_version="1.0.0",
+            score=0.95,
+            threshold=0.62,
+            predicted_class="phishing_like",
+        )
+        response = self.client.get(f"/result/{inv.id}/")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("Phishing-like", html)
+        self.assertNotIn(">phishing_like<", html)
+
     def test_inconclusive_shows_no_score(self) -> None:
         """Assert inconclusive investigation with score None hides score line."""
         investigation = Investigation.objects.create(

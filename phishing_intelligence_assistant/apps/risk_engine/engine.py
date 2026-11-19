@@ -113,27 +113,34 @@ def _build_summary_and_reasons(
 ) -> tuple[str, list[str]]:
     """Generate concise human-readable summary and reasons without banned words."""
     reasons: list[str] = [f.explanation for f in findings if f.status == "flagged" and f.explanation]
+    has_flagged = any(f.status == "flagged" for f in findings)
 
     if level == rules.LEVEL_HIGH:
         summary = f"{rules.WORDING_HIGH_RISK}: Suspicious indicators identified (score {score}/100)."
     elif level == rules.LEVEL_MEDIUM:
         summary = f"{rules.WORDING_MEDIUM_RISK}: Suspicious indicators identified (score {score}/100)."
     elif level == rules.LEVEL_LOW_OBSERVED:
-        summary = f"{rules.WORDING_LOW_OBSERVED_RISK}: No suspicious indicators identified in completed checks (score {score}/100)."
-        if not reasons:
-            reasons.append("No suspicious indicators identified across completed checks.")
-    else:
-        if score is None:
-            summary = f"{rules.WORDING_INCONCLUSIVE}: Insufficient check coverage ({checks_completed} of {checks_total} completed)."
-            reasons.append(f"Check coverage is below half of total checks ({checks_completed}/{checks_total}).")
+        if has_flagged:
+            summary = (
+                f"{rules.WORDING_LOW_OBSERVED_RISK}: some indicators were noted, "
+                f"but the combined score is low (score {score}/100)."
+            )
         else:
-            summary = f"{rules.WORDING_INCONCLUSIVE}: Intelligence or ML checks unavailable (score {score}/100)."
-            unavail_reasons = [
-                f"{f.check_name} check unavailable: {f.explanation or 'Service did not respond'}"
-                for f in findings
-                if f.status == "unavailable" and _resolve_group(f) in (rules.GROUP_INTEL, rules.GROUP_ML)
-            ]
-            reasons.extend(unavail_reasons)
+            summary = (
+                f"{rules.WORDING_LOW_OBSERVED_RISK}: No suspicious indicators identified "
+                f"in completed checks (score {score}/100)."
+            )
+            reasons.append("No suspicious indicators identified across completed checks.")
+    elif score is None:
+        summary = f"{rules.WORDING_INCONCLUSIVE}: Insufficient check coverage ({checks_completed} of {checks_total} completed)."
+        reasons.append(f"Check coverage is below half of total checks ({checks_completed}/{checks_total}).")
+    else:
+        summary = f"{rules.WORDING_INCONCLUSIVE}: Intelligence or ML checks unavailable (score {score}/100)."
+        reasons.extend(
+            f"{f.check_name} check unavailable: {f.explanation or 'Service did not respond'}"
+            for f in findings
+            if f.status == "unavailable" and _resolve_group(f) in (rules.GROUP_INTEL, rules.GROUP_ML)
+        )
 
     return summary, reasons
 

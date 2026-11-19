@@ -83,6 +83,10 @@ class TestThreatIntelService(unittest.TestCase):
         self.assertEqual(findings[0].status, "flagged")
         self.assertEqual(findings[0].severity, "high")
         self.assertEqual(findings[0].evidence["record_id"], "111")
+        self.assertEqual(
+            findings[0].explanation,
+            "URL matched entry in phishtank threat intelligence lookup.",
+        )
 
         # No match -> clear / info with exact required text
         self.assertEqual(findings[1].check_name, "intel.urlhaus")

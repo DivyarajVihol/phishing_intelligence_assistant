@@ -70,7 +70,7 @@ def to_findings(lookups: list[ThreatLookup]) -> list[Finding]:
                     category="intel",
                     status="flagged",
                     severity="high",
-                    explanation=f"URL matched entry in {lk.source} threat intelligence feed.",
+                    explanation=f"URL matched entry in {lk.source} threat intelligence lookup.",
                     evidence={"record_id": lk.record_id, "detail": lk.detail},
                     source=lk.source,
                     checked_at=lk.queried_at,

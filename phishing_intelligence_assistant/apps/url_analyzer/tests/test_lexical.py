@@ -71,7 +71,7 @@ class TestLexicalChecks(unittest.TestCase):
         self.assertIn("warning, not proof", finding.explanation)
 
     def test_http_scheme_fires_info_severity_only(self) -> None:
-        """Assert non-HTTPS scheme triggers lexical.https_scheme with info severity."""
+        """Assert explicit non-HTTPS scheme triggers lexical.https_scheme with info severity."""
         http_url = "http://example.com/about"
         parsed = parse_url(http_url)
         findings = check_lexical(parsed)
@@ -80,3 +80,21 @@ class TestLexicalChecks(unittest.TestCase):
         finding = matching[0]
         self.assertEqual(finding.severity, "info")
         self.assertIn("warning, not proof", finding.explanation)
+
+    def test_no_scheme_assumed_http_does_not_fire_https_finding(self) -> None:
+        """Assert omitted scheme (assumed http) does not trigger lexical.https_scheme."""
+        url_no_scheme = "example.com/about"
+        parsed = parse_url(url_no_scheme)
+        self.assertTrue(parsed.scheme_assumed)
+        findings = check_lexical(parsed)
+        matching = [f for f in findings if f.check_name == "lexical.https_scheme"]
+        self.assertEqual(len(matching), 0)
+
+    def test_explicit_https_does_not_fire_https_finding(self) -> None:
+        """Assert explicit https scheme does not trigger lexical.https_scheme."""
+        https_url = "https://example.com/about"
+        parsed = parse_url(https_url)
+        self.assertFalse(parsed.scheme_assumed)
+        findings = check_lexical(parsed)
+        matching = [f for f in findings if f.check_name == "lexical.https_scheme"]
+        self.assertEqual(len(matching), 0)
