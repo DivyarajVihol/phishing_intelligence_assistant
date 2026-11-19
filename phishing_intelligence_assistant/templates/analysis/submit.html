@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Submit URL - Phishing Intelligence Assistant{% endblock %}
+
+{% block content %}
+<div class="card submit-card">
+    <h1>Analyze Suspicious URL</h1>
+    <p class="subtitle">Submit a suspicious link for explainable lexical, threat-intelligence, and machine-learning risk analysis.</p>
+
+    <form method="post" action="{% url 'submit' %}" class="submit-form" id="submit-form" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="url-input" class="form-label">{{ form.url.label }}</label>
+            {{ form.url }}
+            {% if form.url.errors %}
+                <div class="form-error">
+                    {% for error in form.url.errors %}
+                        <p class="error-text">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn--primary" id="submit-btn">Analyse</button>
+            <a href="/history/" class="link-history">View History</a>
+        </div>
+    </form>
+
+    <div class="lookup-notice">
+        <p class="notice">URLs submitted for analysis are queried against third-party threat intelligence services (PhishTank and URLhaus). Do not submit private credentials or internal company URLs.</p>
+    </div>
+</div>
+{% endblock %}

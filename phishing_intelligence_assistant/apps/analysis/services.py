@@ -206,3 +206,40 @@ def analyse_url(raw: str) -> Investigation:
         ml_pred=ml_pred,
         assessment=assessment,
     )
+
+
+def get_investigation_context(investigation: Investigation) -> dict:
+    """Prepare structured template context for investigation result page."""
+    finding_records = list(investigation.findings.all())
+    lookups = list(investigation.threat_lookups.all())
+    finding_objs = [
+        Finding(
+            check_name=f.check_name, category=f.category, status=f.status,
+            severity=f.severity, explanation=f.explanation, evidence=f.evidence,
+            source=f.source, checked_at=f.checked_at,
+        ) for f in finding_records
+    ]
+    assessment = assess(finding_objs)
+    level_map = {
+        "high": ("High risk", "badge--high"),
+        "medium": ("Medium risk", "badge--medium"),
+        "low_observed": ("Low observed risk", "badge--low"),
+        "inconclusive": ("Inconclusive", "badge--inconclusive"),
+    }
+    label, badge_cls = level_map.get(
+        investigation.overall_level, ("Inconclusive", "badge--inconclusive")
+    )
+    return {
+        "investigation": investigation,
+        "parsed": investigation.parsed_urls.first(),
+        "ml_pred": investigation.ml_predictions.first(),
+        "level_label": label,
+        "badge_class": badge_cls,
+        "assessment": assessment,
+        "show_score": (investigation.overall_level != "inconclusive" and assessment.score is not None),
+        "threat_lookups": lookups,
+        "local_findings": [f for f in finding_records if f.category == "heuristic" and f.status != "unavailable"],
+        "enrichment_findings": [f for f in finding_records if f.category == "enrichment" and f.status != "unavailable"],
+        "unavailable_findings": [f for f in finding_records if f.status == "unavailable"],
+        "unavailable_lookups": [l for l in lookups if l.query_status == "unavailable"],
+    }

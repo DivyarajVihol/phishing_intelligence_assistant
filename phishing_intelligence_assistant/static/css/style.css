@@ -111,6 +111,8 @@ body {
 
 .notice {
   margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
 }
 
 /* Card container */
@@ -119,4 +121,290 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+/* Form components */
+.form-group {
+  margin-bottom: var(--space-3);
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: var(--space-2);
+  font-size: 0.95rem;
+}
+
+.input-url {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.input-url:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.form-error {
+  margin-top: var(--space-2);
+}
+
+.error-text {
+  color: var(--risk-high-text);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.link-history {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.lookup-notice {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-sans);
+}
+
+.btn:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn--primary:hover {
+  background-color: #1a44af;
+}
+
+.btn--secondary {
+  background-color: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn--secondary:hover {
+  background-color: var(--bg);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+}
+
+.badge--high {
+  background-color: var(--risk-high-bg);
+  color: var(--risk-high-text);
+}
+
+.badge--medium {
+  background-color: var(--risk-medium-bg);
+  color: var(--risk-medium-text);
+}
+
+.badge--low {
+  background-color: var(--risk-low-bg);
+  color: var(--risk-low-text);
+}
+
+.badge--inconclusive {
+  background-color: var(--risk-inconclusive-bg);
+  color: var(--risk-inconclusive-text);
+}
+
+/* Chips */
+.chip {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  text-transform: uppercase;
+}
+
+.chip--high {
+  background-color: var(--risk-high-bg);
+  color: var(--risk-high-text);
+}
+
+.chip--medium {
+  background-color: var(--risk-medium-bg);
+  color: var(--risk-medium-text);
+}
+
+.chip--low {
+  background-color: var(--risk-low-bg);
+  color: var(--risk-low-text);
+}
+
+.chip--info {
+  background-color: var(--risk-inconclusive-bg);
+  color: var(--risk-inconclusive-text);
+}
+
+/* Score display */
+.score {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.score-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.score-caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.score-bar {
+  height: 6px;
+  background-color: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  width: 160px;
+}
+
+.score-fill {
+  height: 100%;
+}
+
+.score-fill--high {
+  background-color: var(--risk-high-text);
+}
+
+.score-fill--medium {
+  background-color: var(--risk-medium-text);
+}
+
+.score-fill--low_observed {
+  background-color: var(--risk-low-text);
+}
+
+.score-fill--inconclusive {
+  background-color: var(--risk-inconclusive-text);
+}
+
+/* Findings */
+.finding {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  background-color: var(--surface);
+}
+
+.finding-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.finding-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.finding-explanation {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Tables */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: var(--space-2);
+}
+
+.table th, .table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  background-color: var(--bg);
+  font-weight: 600;
+}
+
+/* Results layout */
+.submitted-url-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.defanged-url {
+  font-family: var(--font-mono);
+  background-color: var(--bg);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  word-break: break-all;
+}
+
+.assessment-summary-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.coverage-line {
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+
+.assessment-summary {
+  font-size: 1.05rem;
+  margin-bottom: var(--space-3);
+}
+
+.muted-text {
+  color: var(--muted);
+  font-style: italic;
 }

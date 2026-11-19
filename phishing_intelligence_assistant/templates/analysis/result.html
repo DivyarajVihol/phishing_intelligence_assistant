@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% load defang %}
+
+{% block title %}Investigation #{{ investigation.id }} - Phishing Intelligence Assistant{% endblock %}
+
+{% block content %}
+<div class="result-header card">
+    <div class="submitted-url-bar">
+        <span class="url-label">Submitted URL (Defanged):</span>
+        <code class="defanged-url">{{ investigation.submitted_url|defang }}</code>
+        <button type="button" class="btn btn--secondary" id="copy-defanged-btn" data-url="{{ investigation.submitted_url|defang }}">Copy defanged URL</button>
+    </div>
+</div>
+
+<!-- 1. Overall assessment -->
+<section class="card section-assessment">
+    <h2>Overall Assessment</h2>
+    <div class="assessment-summary-row">
+        <div class="assessment-badge-box">
+            <span class="badge {{ badge_class }}">{{ level_label }}</span>
+        </div>
+        {% if show_score %}
+        <div class="score">
+            <span class="score-number">{{ investigation.score }} / 100</span>
+            <span class="score-caption">higher means more suspicious</span>
+            <div class="score-bar">
+                <div class="score-fill score-fill--{{ investigation.overall_level }}" style="width: {{ investigation.score }}%;"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <p class="coverage-line">Based on {{ assessment.checks_completed }} of {{ assessment.checks_total }} checks completed.</p>
+    <p class="assessment-summary">{{ assessment.summary }}</p>
+
+    {% if assessment.reasons %}
+    <div class="assessment-reasons">
+        <h3>Key Indicators</h3>
+        <ul>
+            {% for reason in assessment.reasons %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="points-breakdown">
+        <h3>Points Breakdown</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Check Group</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group_name, points in assessment.breakdown %}
+                <tr>
+                    <td>{{ group_name }}</td>
+                    <td>{{ points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- 2. Threat intelligence -->
+<section class="card section-threat-intel">
+    <h2>Threat Intelligence</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Record ID</th>
+                <th>Queried At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lk in threat_lookups %}
+            <tr>
+                <td><strong>{{ lk.source }}</strong></td>
+                <td>
+                    {% if lk.query_status == "match" %}
+                        <span class="badge badge--high">Match found</span>
+                    {% elif lk.query_status == "no_match" %}
+                        <span class="badge badge--inconclusive">No match found in this source at the time of lookup.</span>
+                    {% elif lk.query_status == "unavailable" %}
+                        <span class="badge badge--inconclusive">Unavailable</span>
+                    {% else %}
+                        <span class="badge badge--inconclusive">Not configured</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if lk.source_record_id %}
+                        <code>{{ lk.source_record_id }}</code>
+                    {% else %}
+                        <span class="muted-text">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ lk.queried_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No threat intelligence lookups recorded.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<!-- 3. Local URL and obfuscation findings -->
+<section class="card section-local-findings">
+    <h2>Local URL and Obfuscation Findings</h2>
+    {% if local_findings %}
+        <div class="findings-list">
+            {% for f in local_findings %}
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-title">{{ f.check_name }}</span>
+                    <span class="chip chip--{{ f.severity }}">{{ f.severity }}</span>
+                </div>
+                <p class="finding-explanation">{{ f.explanation }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="muted-text">No suspicious heuristic indicators flagged in completed local checks.</p>
+    {% endif %}
+</section>
+
+<!-- 4. ML prediction -->
+<section class="card section-ml">
+    <h2>Machine Learning Prediction</h2>
+    {% if ml_pred %}
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Model</th>
+                <td>{{ ml_pred.model_name }} ({{ ml_pred.model_version }})</td>
+            </tr>
+            <tr>
+                <th>Classification</th>
+                <td>
+                    {% if ml_pred.predicted_class == "phishing_like" %}
+                        <span class="badge badge--high">phishing_like</span>
+                    {% else %}
+                        <span class="badge badge--low">benign</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Model Score</th>
+                <td>{{ ml_pred.score|floatformat:4 }}</td>
+            </tr>
+            <tr>
+                <th>Decision Threshold</th>
+                <td>{{ ml_pred.threshold|floatformat:4 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted-text">Machine learning prediction is not available for this investigation.</p>
+    {% endif %}
+</section>
+
+<!-- 5. Enrichment (only if present) -->
+{% if enrichment_findings %}
+<section class="card section-enrichment">
+    <h2>Domain Enrichment</h2>
+    <div class="findings-list">
+        {% for f in enrichment_findings %}
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-title">{{ f.check_name }}</span>
+                <span class="chip chip--{{ f.severity }}">{{ f.severity }}</span>
+            </div>
+            <p class="finding-explanation">{{ f.explanation }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- 6. Unavailable / not completed checks -->
+<section class="card section-unavailable">
+    <h2>Unavailable / Not Completed Checks</h2>
+    {% if unavailable_findings or unavailable_lookups %}
+        <ul class="unavailable-list">
+            {% for f in unavailable_findings %}
+            <li><strong>{{ f.check_name }}</strong>: {{ f.explanation }}</li>
+            {% endfor %}
+            {% for lk in unavailable_lookups %}
+            <li><strong>{{ lk.source }}</strong>: Threat intelligence query was unavailable ({{ lk.error|default:"Service error" }}).</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted-text">All scheduled checks completed successfully.</p>
+    {% endif %}
+</section>
+
+<!-- 7. Parsed URL components table -->
+<section class="card section-parsed">
+    <h2>Parsed URL Components</h2>
+    {% if parsed %}
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Scheme</th>
+                <td><code>{{ parsed.scheme }}</code> {% if parsed.scheme_assumed %}<span class="chip chip--info">assumed</span>{% endif %}</td>
+            </tr>
+            <tr>
+                <th>Hostname</th>
+                <td><code>{{ parsed.hostname|defang }}</code></td>
+            </tr>
+            <tr>
+                <th>Registered Domain</th>
+                <td><code>{{ parsed.registered_domain|defang }}</code></td>
+            </tr>
+            {% if parsed.subdomain %}
+            <tr>
+                <th>Subdomain</th>
+                <td><code>{{ parsed.subdomain|defang }}</code></td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>Path</th>
+                <td><code>{{ parsed.path|default:"/" }}</code></td>
+            </tr>
+            {% if parsed.query %}
+            <tr>
+                <th>Query</th>
+                <td><code>{{ parsed.query }}</code></td>
+            </tr>
+            {% endif %}
+            {% if parsed.port %}
+            <tr>
+                <th>Port</th>
+                <td><code>{{ parsed.port }}</code></td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>IP Host</th>
+                <td>{{ parsed.is_ip_host|yesno:"Yes,No" }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+
+<!-- 8. Limitation notice (verbatim from docs/06) -->
+<section class="card section-limitation">
+    <h2>Notice</h2>
+    <p class="notice">These results are indicators for investigation. They do not independently establish that a website is malicious or safe. A missing threat-feed record does not mean a URL is safe.</p>
+</section>
+{% endblock %}
