@@ -219,6 +219,12 @@ body {
   background-color: var(--bg);
 }
 
+.btn--sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 /* Badges */
 .badge {
   display: inline-block;
@@ -373,8 +379,15 @@ body {
 .submitted-url-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.url-label {
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .defanged-url {
@@ -383,6 +396,28 @@ body {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius);
   word-break: break-all;
+  font-size: 0.875rem;
+  max-width: 100%;
+}
+
+.submitted-time-line {
+  margin-top: var(--space-2);
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
+
+@media (min-width: 768px) {
+  .submitted-url-bar {
+    flex-wrap: nowrap;
+  }
+
+  .defanged-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .assessment-summary-row {
