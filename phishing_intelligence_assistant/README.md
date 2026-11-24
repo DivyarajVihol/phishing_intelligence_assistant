@@ -1,43 +1,203 @@
 # Open-Source Phishing Intelligence and Investigation Assistant
 
-An explainable investigation assistant for suspicious URLs. The app parses URLs, performs lexical and obfuscation checks, executes threat-intelligence lookups (PhishTank, URLhaus), runs ML predictions, and calculates an explainable risk score (0–100) and risk level.
+An explainable, defensible investigation assistant for suspicious URLs. The assistant analyzes user-submitted URLs through lexical heuristics, obfuscation checks, threat intelligence feeds (PhishTank, URLhaus), and machine learning predictions to produce an explainable risk score (0–100) and risk level.
+
+> **Important**: This tool is an **investigation assistant**, never a "safe/malicious" oracle. A lack of findings or feed matches does not establish that a URL is benign.
+
+---
+
+## Features
+
+- **Lexical Heuristics** (`apps/url_analyzer/lexical.py`):
+  - Excessive URL length (> 75 characters)
+  - Excessive subdomain nesting (> 3 subdomain levels)
+  - Numerical IP address host
+  - Sensitive authentication keywords (e.g. login, signin, verify, account)
+  - '@' symbol in the authority section
+  - Missing HTTPS encryption (plain HTTP scheme)
+- **Obfuscation & Deception Heuristics** (`apps/url_analyzer/obfuscation.py`):
+  - Percent-encoded characters in hostname or path
+  - Userinfo credentials preceding the destination host (`user@host`)
+  - Repeated delimiters ('//' in path or '--' in hostname)
+  - Non-ASCII characters or punycode (`xn--`) homograph indicators
+  - Deep subdomain nesting
+  - Recognized brand names in subdomain or path when the registered domain differs
+- **Threat Intelligence Integrations**:
+  - **PhishTank**: Queries phishing submissions and community verification status.
+  - **URLhaus**: Queries active malware distribution intelligence (reported strictly as malware intelligence, never conflated with phishing).
+- **Machine Learning Engine**: Domain-level logistic regression classifier (v1) trained on the PhiUSIIL dataset, scoring lexical domain features.
+- **Explainable Risk Engine**:
+  - Deterministic 0–100 risk score and categorical tiers (`High risk`, `Medium risk`, `Low observed risk`, `Inconclusive`).
+  - Transparent point breakdown by source category and completed check coverage.
+  - Confirmed threat feed matches force the score to ≥ 90.
+- **Investigation History**: Search and multi-facet filtering (URL/domain search, date range, risk tier, threat feed matches, status, ML classification) with pagination.
+- **Metrics Dashboard**: 30-day activity trends, risk distribution, top registered domains and TLDs, check availability, and ML prediction splits.
+- **Investigation Reports**: Print-friendly HTML reports and machine-readable JSON exports with complete evidence records.
+
+---
 
 ## Tech Stack
-- **Backend**: Python 3.12, Django 5.2 LTS, SQLite, LocMemCache
-- **URL & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas, joblib
-- **HTTP**: `requests`
-- **Frontend**: Django templates, vanilla CSS, vanilla JS
 
-## Setup
-1. Create and activate a Python virtual environment:
-   ```bash
-   python -m venv .venv
-   # Windows:
-   .venv\Scripts\activate
+- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache.
+- **Analysis & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas 2.3.x, joblib.
+- **HTTP & Config**: `requests`, `python-dotenv`.
+- **Frontend**: Django templates, vanilla CSS (custom design tokens), vanilla JavaScript. No external CDNs or UI libraries.
+
+---
+
+## Windows Setup
+
+1. **Navigate to the project folder**:
+   The project directory sits inside the git repository. Ensure you `cd` into the project folder first:
+   ```powershell
+   cd phishing_intelligence_assistant
    ```
-2. Install dependencies:
-   ```bash
+
+2. **Create and activate a virtual environment**:
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```powershell
    python -m pip install -r requirements.txt
    ```
-3. Configure environment:
-   ```bash
-   cp .env.example .env
+   > **Windows Policy Note**: Direct invocation of `pip.exe` may be restricted by Windows application-control policies on some machines. Always use `python -m pip`.
+   > **Pandas Version**: Pandas must remain on version 2.3.x (do not upgrade to 3.x, which is restricted by policy).
+
+4. **Configure environment variables**:
+   ```powershell
+   Copy-Item .env.example .env
    ```
-4. Run migrations:
-   ```bash
+   Open `.env` in an editor and configure the variables (see below).
+
+5. **Run database migrations**:
+   ```powershell
    python manage.py migrate
    ```
-5. Run the development server:
-   ```bash
+
+6. **Start the development server**:
+   ```powershell
    python manage.py runserver
    ```
+   Visit `http://127.0.0.1:8000/` in your browser.
+
+---
+
+## Environment Variables (`.env`)
+
+Configure the following variables in your `.env` file (never commit real secrets or keys):
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `DJANGO_SECRET_KEY` | `change-me` | Secret key for Django cryptographic signing |
+| `DJANGO_DEBUG` | `True` | Set to `False` in production |
+| `DJANGO_ALLOWED_HOSTS` | `127.0.0.1,localhost` | Comma-separated list of permitted hostnames |
+| `ENABLE_PHISHTANK` | `True` | Enable PhishTank threat intelligence lookups |
+| `PHISHTANK_APP_KEY` | *(empty)* | Optional application key for PhishTank API |
+| `PHISHTANK_USER_AGENT` | `phishtank/assistant` | Descriptive User-Agent header for PhishTank queries |
+| `ENABLE_URLHAUS` | `True` | Enable URLhaus malware intelligence lookups |
+| `URLHAUS_AUTH_KEY` | *(empty)* | Required Auth-Key for URLhaus API lookups |
+| `ENABLE_DNS_RDAP` | `False` | Feature flag for DNS/RDAP enrichment (optional phase) |
+| `ENABLE_REDIRECT_CHECK` | `False` | Feature flag for HTTP redirect checker (optional phase) |
+| `EXTERNAL_TIMEOUT_SECONDS` | `5` | Network timeout in seconds for outbound calls |
+| `MAX_URL_LENGTH` | `2048` | Maximum accepted length for submitted URLs |
+| `LOOKUP_CACHE_TTL_SECONDS` | `3600` | In-memory lookup cache TTL in seconds |
+
+### Obtaining Threat Intelligence API Keys
+
+- **PhishTank**: Lookups work without an API key provided a descriptive, unique `PHISHTANK_USER_AGENT` is configured. An application key is optional, and new user registration on PhishTank may be temporarily closed.
+- **URLhaus**: Register a free account at [URLhaus (abuse.ch)](https://urlhaus.abuse.ch/). After logging in, create a profile first, then generate the `Auth-Key` inside your profile. If this key is omitted, URLhaus lookups will display as "Not configured".
+
+---
+
+## Dataset Preparation & Model Training
+
+Datasets are not stored in git. To train or retrain the machine learning model:
+
+1. **Place the raw dataset**:
+   Obtain the PhiUSIIL Phishing URL Dataset CSV and save it to:
+   `ml/data/raw/PhiUSIIL_Phishing_URL_Dataset.csv`
+
+2. **Clean and prepare dataset splits**:
+   ```powershell
+   python -m ml.training.prepare_data
+   ```
+   This normalizes URLs, removes parse failures, audits domain leakage, removes conflicts, and deterministically partitions rows into train, validation, and test splits at `ml/data/processed/dataset.csv`.
+
+3. **Train, evaluate, and save artifacts**:
+   ```powershell
+   python -m ml.training.train
+   ```
+   This trains candidate models (Logistic Regression, Random Forest, Dummy Baseline), selects the best performer by PR-AUC, tunes the decision threshold on validation data, and outputs artifacts to `ml/artifacts/`:
+   - `model-v1.joblib`: Serialized scikit-learn pipeline.
+   - `model-v1.json`: Metadata, threshold, feature names, and performance metrics.
+   - `evaluation.md`: Detailed evaluation report including confusion matrix and error analysis.
+
+---
 
 ## Running Tests
-Run all unit and smoke tests:
-```bash
-python manage.py test
+
+Execute the automated test suite across all apps and ML modules:
+
+```powershell
+python manage.py test apps ml
 ```
 
-## Security Notice
-- Submitted URLs are never fetched or rendered as active links.
-- All displays of user-submitted URLs are defanged (`defang_url`).
+All network calls are strictly mocked in tests. Automated tests never connect to external servers or feeds.
+
+---
+
+## Project Structure
+
+```
+phishing_intelligence_assistant/
+├── apps/
+│   ├── analysis/       # URL submission, results, history views, models & forms
+│   ├── core/           # Shared dataclasses and typing contracts (no Django dependencies)
+│   ├── dashboard/      # Metrics aggregation and dashboard view
+│   ├── ml_engine/      # ML inference and feature row construction
+│   ├── reports/        # Canonical report builder, HTML report view & JSON export
+│   ├── risk_engine/    # Heuristic scoring rules and risk assessment engine
+│   ├── threat_intel/   # PhishTank and URLhaus connectors and caching service
+│   └── url_analyzer/   # URL parser, lexical checks, and obfuscation heuristics
+├── config/             # Django project settings, URLs, and WSGI configuration
+├── docs/               # Architecture, specification, UI guidelines, and test reports
+├── ml/
+│   ├── artifacts/      # Trained model artifacts and evaluation markdown
+│   ├── data/           # Raw and processed training datasets (gitignored)
+│   └── training/       # Data preparation, training, and evaluation scripts
+├── static/             # Vanilla CSS design tokens and vanilla JavaScript
+└── templates/          # Base layout and application templates
+```
+
+---
+
+## Security Architecture
+
+- **NEVER-OPEN Rule**: Submitted URLs are never fetched, visited, or converted to clickable `<a href>` links.
+- **Defanged Display**: All user-submitted URLs and hostnames are rendered strictly in plain text using `defang_url` (e.g. `hxxps://example[.]com`).
+- **Resilient Network Handling**: All outbound requests enforce strict timeouts (`EXTERNAL_TIMEOUT_SECONDS`). Feeds that timeout or error report as "Unavailable", never "no match".
+- **Separated Evidence**: Threat intelligence matches, heuristic findings, ML predictions, and unavailable checks are displayed in distinct sections.
+- **Secret Isolation**: Credentials and API keys are read only from environment variables, never logged or exposed.
+- **Offline Testing**: Automated test suites are completely isolated from live network resources.
+
+---
+
+## Known Limitations
+
+- **v1 ML Model Scope**: The v1 model evaluates lexical features derived exclusively from the registered domain name. It cannot identify path-based phishing on shared hosting platforms (e.g. `vercel.app`, `firebaseapp.com`) and may flag unfamiliar domains. It serves as a supporting indicator contributing at most 30 points to the risk score; a v2 retrain incorporating PhishTank data is planned.
+- **Popular Domain False Positives**: The v1 model can also wrongly flag popular domains (for example `google.com` scored 0.78), which is why ML adds at most 30 points and never decides the level alone.
+- **Threat Intelligence Coverage**: Lookups cover only URLs previously identified and listed in PhishTank or URLhaus. A "no match" finding indicates absence from the database, not that a URL is benign. URLhaus represents malware intelligence, not phishing.
+- **Optional Modules**: DNS/RDAP domain enrichment and controlled redirect following (optional Phases 12 and 13) are not implemented in the current build.
+- **Timezone**: All displayed analysis and query timestamps are normalized and rendered in UTC.
+- **History Date Filtering**: History date input pickers conform to the host browser's regional date format.
+
+---
+
+## Acknowledgements and Data Sources
+
+- **PhiUSIIL Phishing URL Dataset**: Used as training data for the domain-level machine learning model.
+- **PhishTank**: Community-verified phishing feed lookups.
+- **URLhaus by abuse.ch**: Malware distribution intelligence.
