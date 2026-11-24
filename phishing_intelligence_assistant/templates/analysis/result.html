@@ -9,6 +9,8 @@
         <span class="url-label">Submitted URL (Defanged):</span>
         <code class="defanged-url">{{ investigation.submitted_url|defang }}</code>
         <button type="button" class="btn btn--secondary" id="copy-defanged-btn" data-url="{{ investigation.submitted_url|defang }}">Copy defanged URL</button>
+        <a href="{% url 'report' investigation.id %}" class="btn btn--secondary">View report</a>
+        <a href="{% url 'report_json' investigation.id %}" class="btn btn--secondary">Download JSON</a>
     </div>
     <p class="submitted-time-line muted-text">Submitted: {{ investigation.submitted_at|fmt_datetime }}</p>
 </div>

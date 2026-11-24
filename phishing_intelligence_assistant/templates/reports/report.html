@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% load defang dates %}
+
+{% block title %}{{ report.title }} - Phishing Intelligence Assistant{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <div class="report-actions no-print">
+        <a href="{% url 'result' report.report_id %}" class="btn btn--secondary">Back to result</a>
+        <a href="{% url 'report_json' report.report_id %}" class="btn btn--secondary">Download JSON</a>
+        <button type="button" class="btn btn--primary" onclick="window.print()">Print report</button>
+    </div>
+
+    <!-- 1. Header and Metadata -->
+    <div class="card report-header-card">
+        <h1>{{ report.title }}</h1>
+        <div class="report-meta-grid">
+            <div>
+                <span class="report-meta-label">Report ID:</span>
+                <span>#{{ report.report_id }}</span>
+            </div>
+            <div>
+                <span class="report-meta-label">Generated:</span>
+                <span>{{ report.generated_at|fmt_datetime }}</span>
+            </div>
+            <div>
+                <span class="report-meta-label">Submitted:</span>
+                <span>{{ report.submitted_at|fmt_datetime }}</span>
+            </div>
+        </div>
+        <div class="submitted-url-bar report-url-bar">
+            <span class="url-label">Submitted URL (Defanged):</span>
+            <code class="defanged-url">{{ report.submitted_url_defanged }}</code>
+        </div>
+    </div>
+
+    <!-- 2. Overall Assessment -->
+    <section class="card">
+        <h2>Overall Assessment</h2>
+        <div class="assessment-summary-row">
+            <div>
+                <span class="badge {{ report.assessment.badge_class }}">{{ report.assessment.level_label }}</span>
+            </div>
+            {% if report.assessment.show_score %}
+            <div class="score">
+                <span class="score-number">{{ report.assessment.score }} / 100</span>
+                <span class="score-caption">higher means more suspicious</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <p class="coverage-line">Based on {{ report.assessment.coverage.completed }} of {{ report.assessment.coverage.total }} checks completed.</p>
+        <p class="assessment-summary">{{ report.assessment.summary }}</p>
+
+        {% if report.assessment.reasons %}
+        <div class="assessment-reasons">
+            <h3>Key Indicators</h3>
+            <ul>
+                {% for reason in report.assessment.reasons %}
+                <li>{{ reason }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if report.assessment.points_breakdown %}
+        <div class="points-breakdown">
+            <h3>Points Breakdown</h3>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Check Group</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pt in report.assessment.points_breakdown %}
+                        <tr>
+                            <td>{{ pt.group }}</td>
+                            <td>{{ pt.points }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- 3. Threat Intelligence Status -->
+    <section class="card">
+        <h2>Threat Intelligence Lookups</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Query Status</th>
+                        <th>Record ID</th>
+                        <th>Queried At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lk in report.threat_intel %}
+                    <tr>
+                        <td><strong>{{ lk.source_name }}</strong></td>
+                        <td>
+                            {% if lk.status == "match" %}
+                                <span class="badge badge--high">Match found</span>
+                            {% elif lk.status == "no_match" %}
+                                <span class="badge badge--inconclusive">No match found at time of lookup</span>
+                            {% elif lk.status == "unavailable" %}
+                                <span class="badge badge--inconclusive">Unavailable</span>
+                            {% else %}
+                                <span class="badge badge--inconclusive">Not configured</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ lk.source_record_id|default:"—" }}</code></td>
+                        <td>{{ lk.queried_at|fmt_datetime }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No threat intelligence records.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="notice">URLhaus records represent malware intelligence matches, never phishing labels.</p>
+    </section>
+
+    <!-- 4. Local URL Findings -->
+    <section class="card">
+        <h2>Local URL and Obfuscation Findings</h2>
+        {% if report.local_findings %}
+        <div class="findings-list">
+            {% for f in report.local_findings %}
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-title">{{ f.check_name }}</span>
+                    <span class="chip chip--{{ f.severity }}">{{ f.severity }}</span>
+                </div>
+                <p class="finding-explanation">{{ f.explanation }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted-text">No suspicious heuristic indicators flagged in completed local checks.</p>
+        {% endif %}
+    </section>
+
+    <!-- 5. Domain Enrichment (only if present) -->
+    {% if report.enrichment_findings %}
+    <section class="card">
+        <h2>Domain Enrichment</h2>
+        <div class="findings-list">
+            {% for f in report.enrichment_findings %}
+            <div class="finding">
+                <div class="finding-header">
+                    <span class="finding-title">{{ f.check_name }}</span>
+                    <span class="chip chip--{{ f.severity }}">{{ f.severity }}</span>
+                </div>
+                <p class="finding-explanation">{{ f.explanation }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- 6. Machine Learning Prediction -->
+    <section class="card">
+        <h2>Machine Learning Prediction</h2>
+        {% if report.ml_prediction %}
+        <div class="table-responsive">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>Model</th>
+                        <td>{{ report.ml_prediction.model_name }} ({{ report.ml_prediction.model_version }})</td>
+                    </tr>
+                    <tr>
+                        <th>Classification</th>
+                        <td>
+                            {% if report.ml_prediction.predicted_class == "phishing_like" %}
+                                <span class="badge badge--high">{{ report.ml_prediction.label }}</span>
+                            {% else %}
+                                <span class="badge badge--low">{{ report.ml_prediction.label }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Model Score</th>
+                        <td>{{ report.ml_prediction.score }}</td>
+                    </tr>
+                    <tr>
+                        <th>Decision Threshold</th>
+                        <td>{{ report.ml_prediction.threshold }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="muted-text">Machine learning prediction is not available for this investigation.</p>
+        {% endif %}
+    </section>
+
+    <!-- 7. Unavailable Checks -->
+    <section class="card">
+        <h2>Unavailable / Incomplete Checks</h2>
+        {% if report.unavailable_checks %}
+        <ul class="unavailable-list">
+            {% for u in report.unavailable_checks %}
+            <li><strong>{{ u.name }}</strong> ({{ u.category }}): {{ u.explanation }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted-text">All scheduled checks completed successfully.</p>
+        {% endif %}
+    </section>
+
+    <!-- 8. Parsed URL Components -->
+    <section class="card">
+        <h2>Parsed URL Components</h2>
+        {% if report.parsed_components %}
+        <div class="table-responsive">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>Scheme</th>
+                        <td><code>{{ report.parsed_components.scheme }}</code> {% if report.parsed_components.scheme_assumed %}<span class="chip chip--info">assumed</span>{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Hostname</th>
+                        <td><code>{{ report.parsed_components.hostname|defang }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>Registered Domain</th>
+                        <td><code>{{ report.parsed_components.registered_domain|defang }}</code></td>
+                    </tr>
+                    {% if report.parsed_components.subdomain %}
+                    <tr>
+                        <th>Subdomain</th>
+                        <td><code>{{ report.parsed_components.subdomain|defang }}</code></td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Path</th>
+                        <td><code>{{ report.parsed_components.path|default:"/" }}</code></td>
+                    </tr>
+                    {% if report.parsed_components.query %}
+                    <tr>
+                        <th>Query</th>
+                        <td><code>{{ report.parsed_components.query }}</code></td>
+                    </tr>
+                    {% endif %}
+                    {% if report.parsed_components.port %}
+                    <tr>
+                        <th>Port</th>
+                        <td><code>{{ report.parsed_components.port }}</code></td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>IP Host</th>
+                        <td>{{ report.parsed_components.is_ip_host|yesno:"Yes,No" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- 9. Suggested Next Steps -->
+    <section class="card">
+        <h2>Suggested Next Steps</h2>
+        <ul class="steps-list">
+            {% for step in report.suggested_next_steps %}
+            <li>{{ step }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- 10. Limitations Notice -->
+    <section class="card">
+        <h2>Notice and Limitations</h2>
+        <p class="notice">{{ report.limitations }}</p>
+    </section>
+</div>
+{% endblock %}
