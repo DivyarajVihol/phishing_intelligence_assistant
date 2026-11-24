@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load defang %}
+
+{% block title %}Investigation History - Phishing Intelligence Assistant{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="card">
+        <h1>Investigation History</h1>
+        <p class="history-lead">Browse, search, and filter previous URL analysis investigations.</p>
+
+        <form method="get" action="{% url 'history' %}" class="filter-form">
+            <div class="filter-row filter-row--search">
+                <div class="form-group search-group">
+                    <label for="id_q" class="form-label">Search URL or domain</label>
+                    {{ form.q }}
+                </div>
+            </div>
+
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="id_date_from" class="form-label">From Date</label>
+                    {{ form.date_from }}
+                </div>
+                <div class="form-group">
+                    <label for="id_date_to" class="form-label">To Date</label>
+                    {{ form.date_to }}
+                </div>
+                <div class="form-group">
+                    <label for="id_risk_level" class="form-label">Risk Level</label>
+                    {{ form.risk_level }}
+                </div>
+                <div class="form-group">
+                    <label for="id_phishtank" class="form-label">PhishTank</label>
+                    {{ form.phishtank }}
+                </div>
+                <div class="form-group">
+                    <label for="id_urlhaus" class="form-label">URLhaus</label>
+                    {{ form.urlhaus }}
+                </div>
+                <div class="form-group">
+                    <label for="id_status" class="form-label">Status</label>
+                    {{ form.status }}
+                </div>
+                <div class="form-group">
+                    <label for="id_ml_result" class="form-label">ML Result</label>
+                    {{ form.ml_result }}
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="btn btn--primary">Filter</button>
+                <a href="{% url 'history' %}" class="btn btn--secondary">Clear filters</a>
+            </div>
+        </form>
+    </div>
+
+    {% if items %}
+    <div class="card table-responsive">
+        <table class="table history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Defanged URL</th>
+                    <th>Risk Level</th>
+                    <th>Score</th>
+                    <th>Intel Matches</th>
+                    <th>ML Result</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.submitted_at|date:"Y-m-d H:i" }}</td>
+                    <td><code class="defanged-url">{{ item.submitted_url|defang }}</code></td>
+                    <td><span class="badge {{ item.badge_class }}">{{ item.level_label }}</span></td>
+                    <td>{% if item.show_score %}{{ item.score }}{% endif %}</td>
+                    <td>{{ item.intel_matches }}</td>
+                    <td>{{ item.ml_result }}</td>
+                    <td><a href="{{ item.details_url }}" class="link-details">View details</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" aria-label="Investigation history pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if filter_params %}&{{ filter_params }}{% endif %}" class="btn btn--secondary pagination-link pagination-link--prev">Previous</a>
+        {% endif %}
+
+        <span class="pagination-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} total)</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if filter_params %}&{{ filter_params }}{% endif %}" class="btn btn--secondary pagination-link pagination-link--next">Next</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="card empty-state">
+        <p class="muted-text">No investigations match the selected filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

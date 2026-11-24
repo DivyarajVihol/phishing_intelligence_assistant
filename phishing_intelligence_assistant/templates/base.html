@@ -11,10 +11,10 @@
 <body>
     <header class="app-header">
         <div class="container">
-            <a href="/" class="app-brand">Phishing Intelligence Assistant</a>
+            <a href="{% url 'submit' %}" class="app-brand">Phishing Intelligence Assistant</a>
             <nav class="app-nav">
-                <a href="/">Submit URL</a>
-                <a href="/history/">History</a>
+                <a href="{% url 'submit' %}">Submit URL</a>
+                <a href="{% url 'history' %}">History</a>
             </nav>
         </div>
     </header>

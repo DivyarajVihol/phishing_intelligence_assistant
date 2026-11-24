@@ -408,3 +408,102 @@ body {
   color: var(--muted);
   font-style: italic;
 }
+
+/* History and filter styles (Phase 11) */
+.history-lead {
+  color: var(--muted);
+  margin-top: calc(-1 * var(--space-2));
+  margin-bottom: var(--space-4);
+  font-size: 0.95rem;
+}
+
+.filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.filter-row--search {
+  width: 100%;
+}
+
+.input-text, .input-search, .input-date, .select-filter {
+  width: 100%;
+  padding: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.input-search {
+  font-family: var(--font-mono);
+}
+
+.input-text:focus, .input-search:focus, .input-date:focus, .select-filter:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.table-responsive {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.history-table {
+  margin-top: 0;
+}
+
+.history-table th, .history-table td {
+  white-space: nowrap;
+}
+
+.history-table td:nth-child(2) {
+  white-space: normal;
+  max-width: 280px;
+}
+
+.link-details {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-details:hover {
+  text-decoration: underline;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-5);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
