@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% load defang %}
+
+{% block title %}Investigation Dashboard - Phishing Intelligence Assistant{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="card">
+        <h1>Investigation Dashboard</h1>
+        <p class="notice">These figures describe the investigations stored in this tool. They are not a measure of how common phishing is in the real world.</p>
+    </div>
+
+    {% if metrics.total_analyses == 0 %}
+    <div class="card empty-state">
+        <p class="muted-text">No investigations found. Submit a URL to populate the dashboard metrics.</p>
+    </div>
+    {% else %}
+    <div class="dashboard-grid">
+        <div class="card stat-card">
+            <span class="stat-card-label">Total Analyses</span>
+            <div class="stat-card-number">{{ metrics.total_analyses }}</div>
+            <span class="stat-card-caption">All recorded investigations</span>
+        </div>
+        <div class="card stat-card">
+            <span class="stat-card-label">PhishTank Matches</span>
+            <div class="stat-card-number">{{ metrics.threat_intel.phishtank.count }}</div>
+            <span class="stat-card-caption">{{ metrics.threat_intel.phishtank.percentage }}% of investigations</span>
+        </div>
+        <div class="card stat-card">
+            <span class="stat-card-label">URLhaus Matches</span>
+            <div class="stat-card-number">{{ metrics.threat_intel.urlhaus.count }}</div>
+            <span class="stat-card-caption">Malware intelligence matches ({{ metrics.threat_intel.urlhaus.percentage }}%)</span>
+        </div>
+    </div>
+
+    <!-- 1. Risk distribution -->
+    <div class="card">
+        <h2>Risk Level Distribution</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Risk Level</th>
+                        <th>Analyses</th>
+                        <th>Proportion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metrics.risk_distribution %}
+                    <tr>
+                        <td><span class="badge {{ item.badge }}">{{ item.label }}</span></td>
+                        <td>{{ item.count }}</td>
+                        <td>
+                            <div class="meter-cell">
+                                <progress class="meter-bar meter-bar--{{ item.key }}" value="{{ item.count }}" max="{{ metrics.total_analyses }}"></progress>
+                                <span class="meter-text">{{ item.count }} ({{ item.percentage }}%)</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. Threat Intelligence Matches -->
+    <div class="card">
+        <h2>Threat Intelligence Matches</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Intelligence Feed</th>
+                        <th>Classification Type</th>
+                        <th>Matches</th>
+                        <th>Proportion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PhishTank</td>
+                        <td>Phishing feed match</td>
+                        <td>{{ metrics.threat_intel.phishtank.count }}</td>
+                        <td>
+                            <div class="meter-cell">
+                                <progress class="meter-bar" value="{{ metrics.threat_intel.phishtank.count }}" max="{{ metrics.total_analyses }}"></progress>
+                                <span class="meter-text">{{ metrics.threat_intel.phishtank.count }} ({{ metrics.threat_intel.phishtank.percentage }}%)</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>URLhaus</td>
+                        <td>Malware intelligence matches</td>
+                        <td>{{ metrics.threat_intel.urlhaus.count }}</td>
+                        <td>
+                            <div class="meter-cell">
+                                <progress class="meter-bar" value="{{ metrics.threat_intel.urlhaus.count }}" max="{{ metrics.total_analyses }}"></progress>
+                                <span class="meter-text">{{ metrics.threat_intel.urlhaus.count }} ({{ metrics.threat_intel.urlhaus.percentage }}%)</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="notice">URLhaus records represent malware intelligence matches, never phishing labels.</p>
+    </div>
+
+    <!-- 3. Machine Learning Prediction Distribution -->
+    <div class="card">
+        <h2>Machine Learning Prediction Distribution</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Prediction Outcome</th>
+                        <th>Count</th>
+                        <th>Proportion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metrics.ml_distribution %}
+                    <tr>
+                        <td>{{ item.label }}</td>
+                        <td>{{ item.count }}</td>
+                        <td>
+                            <div class="meter-cell">
+                                <progress class="meter-bar" value="{{ item.count }}" max="{{ metrics.total_analyses }}"></progress>
+                                <span class="meter-text">{{ item.count }} ({{ item.percentage }}%)</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. Top Domains and TLDs -->
+    <div class="dashboard-grid">
+        <div class="card">
+            <h2>Top 10 Registered Domains</h2>
+            {% if metrics.top_domains %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Analyses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in metrics.top_domains %}
+                        <tr>
+                            <td><code>{{ d.registered_domain|defang }}</code></td>
+                            <td>{{ d.count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted-text">No domain records available.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Top 10 TLDs</h2>
+            {% if metrics.top_tlds %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>TLD</th>
+                            <th>Analyses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in metrics.top_tlds %}
+                        <tr>
+                            <td><code>.{{ t.suffix }}</code></td>
+                            <td>{{ t.count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted-text">No TLD records available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 5. Check Availability -->
+    <div class="card">
+        <h2>Check Availability by Group</h2>
+        {% if metrics.check_availability %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Check Group</th>
+                        <th>Flagged</th>
+                        <th>Clear</th>
+                        <th>Unavailable</th>
+                        <th>Not Run</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in metrics.check_availability %}
+                    <tr>
+                        <td><strong>{{ group.group }}</strong></td>
+                        <td>{{ group.flagged }}</td>
+                        <td>{{ group.clear }}</td>
+                        <td>{{ group.unavailable }}</td>
+                        <td>{{ group.not_run }}</td>
+                        <td>{{ group.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="muted-text">No check findings recorded.</p>
+        {% endif %}
+    </div>
+
+    <!-- 6. Activity over time -->
+    <div class="card">
+        <h2>Activity Over Time (Last 30 Days)</h2>
+        <div class="table-responsive table-scroll-y">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Analyses</th>
+                        <th>Activity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in metrics.activity_over_time %}
+                    <tr>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.count }}</td>
+                        <td>
+                            <div class="meter-cell">
+                                <progress class="meter-bar" value="{{ day.count }}" max="{{ day.max }}"></progress>
+                                <span class="meter-text">{{ day.count }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
