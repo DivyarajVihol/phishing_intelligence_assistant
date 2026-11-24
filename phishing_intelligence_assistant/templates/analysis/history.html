@@ -56,8 +56,17 @@
     </div>
 
     {% if items %}
-    <div class="card table-responsive">
+    <div class="card history-table-card">
         <table class="table history-table">
+            <colgroup>
+                <col class="col-date">
+                <col class="col-url">
+                <col class="col-level">
+                <col class="col-score">
+                <col class="col-intel">
+                <col class="col-ml">
+                <col class="col-actions">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Date</th>
@@ -72,13 +81,18 @@
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>{{ item.submitted_at|fmt_datetime }}</td>
+                    <td><span class="history-datetime">{{ item.submitted_at|fmt_datetime }}</span></td>
                     <td><code class="defanged-url">{{ item.submitted_url|defang }}</code></td>
                     <td><span class="badge {{ item.badge_class }}">{{ item.level_label }}</span></td>
                     <td>{% if item.show_score %}{{ item.score }}{% endif %}</td>
                     <td>{{ item.intel_matches }}</td>
                     <td>{{ item.ml_result }}</td>
-                    <td><a href="{{ item.details_url }}" class="link-details">View details</a></td>
+                    <td>
+                        <div class="history-actions">
+                            <a href="{{ item.details_url }}" class="link-details">View details</a>
+                            <a href="{% url 'report' item.id %}" class="link-details">Report</a>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
