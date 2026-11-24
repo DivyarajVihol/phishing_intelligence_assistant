@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load defang %}
+{% load defang dates %}
 
 {% block title %}Investigation Dashboard - Phishing Intelligence Assistant{% endblock %}
 
@@ -240,7 +240,7 @@
                 <tbody>
                     {% for day in metrics.activity_over_time %}
                     <tr>
-                        <td>{{ day.date }}</td>
+                        <td>{{ day.date|fmt_date }}</td>
                         <td>{{ day.count }}</td>
                         <td>
                             <div class="meter-cell">

@@ -108,3 +108,8 @@ ENABLE_REDIRECT_CHECK = os.environ.get("ENABLE_REDIRECT_CHECK", "False").lower()
 EXTERNAL_TIMEOUT_SECONDS = int(os.environ.get("EXTERNAL_TIMEOUT_SECONDS", "5"))
 MAX_URL_LENGTH = int(os.environ.get("MAX_URL_LENGTH", "2048"))
 LOOKUP_CACHE_TTL_SECONDS = int(os.environ.get("LOOKUP_CACHE_TTL_SECONDS", "3600"))
+
+# Display date and datetime formats
+DATE_DISPLAY_FORMAT = "d-M-Y"
+DATETIME_DISPLAY_FORMAT = "d-M-Y h:i A"
+

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load defang %}
+{% load defang dates %}
 
 {% block title %}Investigation #{{ investigation.id }} - Phishing Intelligence Assistant{% endblock %}
 
@@ -10,6 +10,7 @@
         <code class="defanged-url">{{ investigation.submitted_url|defang }}</code>
         <button type="button" class="btn btn--secondary" id="copy-defanged-btn" data-url="{{ investigation.submitted_url|defang }}">Copy defanged URL</button>
     </div>
+    <p class="submitted-time-line muted-text">Submitted: {{ investigation.submitted_at|fmt_datetime }}</p>
 </div>
 
 <!-- 1. Overall assessment -->
@@ -99,7 +100,7 @@
                         <span class="muted-text">—</span>
                     {% endif %}
                 </td>
-                <td>{{ lk.queried_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
+                <td>{{ lk.queried_at|fmt_datetime }}</td>
             </tr>
             {% empty %}
             <tr>

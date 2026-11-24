@@ -1,8 +1,10 @@
 """Unit and security tests for analysis views and templates."""
 import re
+from datetime import date, datetime, timezone as dt_timezone
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+from django.utils import timezone, translation
 
 from apps.analysis.models import (
     FindingRecord,
@@ -12,6 +14,7 @@ from apps.analysis.models import (
     ThreatIntelLookupRecord,
 )
 from apps.analysis.services import analyse_url
+from apps.analysis.templatetags.dates import fmt_date, fmt_datetime
 from apps.core.types import ThreatLookup
 from apps.url_analyzer.defang import defang_url
 
@@ -312,3 +315,88 @@ class TestAnalysisViews(TestCase):
             notice_pattern = re.compile(re.escape(LIMITATION_NOTICE), re.IGNORECASE)
             html_without_notice = notice_pattern.sub("", html)
             self.assertNotIn("safe", html_without_notice.lower())
+
+
+class TestDateFormattingDisplay(TestCase):
+    """Test suite for uniform English date and datetime formatting filters and views."""
+
+    def test_fmt_date_filter(self) -> None:
+        """Assert fmt_date formats date and ISO string to d-M-Y."""
+        d = date(2026, 11, 24)
+        self.assertEqual(fmt_date(d), "24-Nov-2026")
+        self.assertEqual(fmt_date("2026-11-24"), "24-Nov-2026")
+
+    def test_fmt_datetime_filter(self) -> None:
+        """Assert fmt_datetime formats to d-M-Y h:i A handling noon and midnight correctly."""
+        dt_pm = datetime(2026, 11, 24, 15, 22)
+        self.assertEqual(fmt_datetime(dt_pm), "24-Nov-2026 03:22 PM")
+
+        dt_midnight = datetime(2026, 11, 24, 0, 5)
+        self.assertEqual(fmt_datetime(dt_midnight), "24-Nov-2026 12:05 AM")
+
+        dt_noon = datetime(2026, 11, 24, 12, 30)
+        self.assertEqual(fmt_datetime(dt_noon), "24-Nov-2026 12:30 PM")
+
+    def test_none_gives_dash(self) -> None:
+        """Assert None or empty values return '-'."""
+        self.assertEqual(fmt_date(None), "-")
+        self.assertEqual(fmt_datetime(None), "-")
+        self.assertEqual(fmt_date(""), "-")
+        self.assertEqual(fmt_datetime(""), "-")
+
+    def test_english_locale_override(self) -> None:
+        """Assert formatting stays in English regardless of active translation locale."""
+        cur_lang = translation.get_language()
+        try:
+            translation.activate("de")
+            d = date(2026, 3, 24)
+            dt = datetime(2026, 3, 24, 15, 22)
+            self.assertEqual(fmt_date(d), "24-Mar-2026")
+            self.assertEqual(fmt_datetime(dt), "24-Mar-2026 03:22 PM")
+        finally:
+            translation.activate(cur_lang)
+
+    def test_pages_display_new_format(self) -> None:
+        """Assert result, history, and dashboard pages render dates in the unified format."""
+        target_dt = datetime(2026, 11, 24, 15, 22, tzinfo=dt_timezone.utc)
+        inv = Investigation.objects.create(
+            submitted_url="https://date-format-check.com/login",
+            overall_level="high",
+            score=85,
+            summary="High risk assessment.",
+        )
+        Investigation.objects.filter(id=inv.id).update(submitted_at=target_dt)
+        ParsedURLRecord.objects.create(
+            investigation=inv,
+            original="https://date-format-check.com/login",
+            normalized="https://date-format-check.com/login",
+            scheme="https",
+            hostname="date-format-check.com",
+            registered_domain="date-format-check.com",
+        )
+        ThreatIntelLookupRecord.objects.create(
+            investigation=inv,
+            source="phishtank",
+            matched=True,
+            query_status="match",
+            queried_at=target_dt,
+        )
+
+        # 1. Result page
+        res_resp = self.client.get(f"/result/{inv.id}/")
+        self.assertEqual(res_resp.status_code, 200)
+        res_html = res_resp.content.decode()
+        self.assertIn("24-Nov-2026 03:22 PM", res_html)
+
+        # 2. History page
+        hist_resp = self.client.get("/history/")
+        self.assertEqual(hist_resp.status_code, 200)
+        hist_html = hist_resp.content.decode()
+        self.assertIn("24-Nov-2026 03:22 PM", hist_html)
+
+        # 3. Dashboard page
+        dash_resp = self.client.get("/dashboard/")
+        self.assertEqual(dash_resp.status_code, 200)
+        dash_html = dash_resp.content.decode()
+        self.assertIn("24-Nov-2026", dash_html)
+

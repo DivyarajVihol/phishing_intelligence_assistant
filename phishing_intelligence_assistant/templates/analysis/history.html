@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load defang %}
+{% load defang dates %}
 
 {% block title %}Investigation History - Phishing Intelligence Assistant{% endblock %}
 
@@ -72,7 +72,7 @@
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>{{ item.submitted_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ item.submitted_at|fmt_datetime }}</td>
                     <td><code class="defanged-url">{{ item.submitted_url|defang }}</code></td>
                     <td><span class="badge {{ item.badge_class }}">{{ item.level_label }}</span></td>
                     <td>{% if item.show_score %}{{ item.score }}{% endif %}</td>
