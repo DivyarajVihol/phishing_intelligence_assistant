@@ -32,13 +32,13 @@ An explainable, defensible investigation assistant for suspicious URLs. The assi
   - Confirmed threat feed matches force the score to ≥ 90.
 - **Investigation History**: Search and multi-facet filtering (URL/domain search, date range, risk tier, threat feed matches, status, ML classification) with pagination.
 - **Metrics Dashboard**: 30-day activity trends, risk distribution, top registered domains and TLDs, check availability, and ML prediction splits.
-- **Investigation Reports**: Print-friendly HTML reports and machine-readable JSON exports with complete evidence records.
+- **Investigation Reports**: Downloadable PDF reports (`investigation-report-<id>.pdf`, generated via `reportlab` with defanged URLs and no hyperlinks) and machine-readable JSON exports with complete evidence records.
 
 ---
 
 ## Tech Stack
 
-- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache.
+- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache, `reportlab`.
 - **Analysis & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas 2.3.x, joblib.
 - **HTTP & Config**: `requests`, `python-dotenv`.
 - **Frontend**: Django templates, vanilla CSS (custom design tokens), vanilla JavaScript. No external CDNs or UI libraries.

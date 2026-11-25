@@ -6,4 +6,5 @@ from . import views
 urlpatterns = [
     path("<int:id>/", views.report_html, name="report"),
     path("<int:id>/json/", views.report_json, name="report_json"),
+    path("<int:id>/pdf/", views.report_pdf, name="report_pdf"),
 ]

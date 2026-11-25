@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 
 from apps.analysis.models import Investigation
 from apps.reports.builder import build_report
+from apps.reports.pdf import generate_pdf_bytes
 
 
 def report_html(request: HttpRequest, id: int) -> HttpResponse:
@@ -22,4 +23,14 @@ def report_json(request: HttpRequest, id: int) -> HttpResponse:
     payload = json.dumps(report, indent=2)
     response = HttpResponse(payload, content_type="application/json")
     response["Content-Disposition"] = f'attachment; filename="report_{investigation.id}.json"'
+    return response
+
+
+def report_pdf(request: HttpRequest, id: int) -> HttpResponse:
+    """Download investigation report as PDF attachment."""
+    investigation = get_object_or_404(Investigation, pk=id)
+    report = build_report(investigation)
+    pdf_bytes = generate_pdf_bytes(report)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="investigation-report-{investigation.id}.pdf"'
     return response

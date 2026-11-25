@@ -13,6 +13,7 @@
 | Cache | Django cache framework, `LocMemCache` |
 | Tests | Django test runner: `python manage.py test` |
 | Frontend | Django templates, one CSS file, one small JS file. No framework |
+| Reports (PDF) | `reportlab` |
 | Version control | Git |
 
 `requirements.txt` holds compatible ranges. After the first successful install, pin exact versions (`pip freeze`, keep only these packages and their dependencies).
