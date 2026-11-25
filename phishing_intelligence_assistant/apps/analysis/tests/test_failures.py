@@ -43,10 +43,14 @@ class TestFailureScenariosAndResiliency(TestCase):
         self.assertEqual(json_resp.status_code, 200)
         self.assertEqual(json.loads(json_resp.content.decode())["report_id"], inv.id)
 
+    @patch("apps.threat_intel.phishtank.requests.post")
+    @patch("apps.threat_intel.urlhaus.requests.post")
     @patch("apps.analysis.services.predict")
-    def test_ml_model_file_missing(self, mock_predict) -> None:
+    def test_ml_model_file_missing(self, mock_predict, mock_uh_post, mock_pt_post) -> None:
         """Assert missing ML artifacts show Unavailable without crashing analysis."""
         mock_predict.side_effect = ModelUnavailable("Model artifact not found")
+        mock_pt_post.side_effect = requests.exceptions.RequestException("Mocked offline")
+        mock_uh_post.side_effect = requests.exceptions.RequestException("Mocked offline")
 
         response = self.client.post("/", {"url": "https://no-model-test.org/check"}, follow=True)
         self.assertEqual(response.status_code, 200)
@@ -96,9 +100,11 @@ class TestFailureScenariosAndResiliency(TestCase):
                 self.assertTrue(resp.context["form"].errors)
                 self.assertEqual(Investigation.objects.count(), count_before)
 
+    @patch("apps.threat_intel.phishtank.requests.post")
     @override_settings(URLHAUS_AUTH_KEY="")
-    def test_missing_urlhaus_key_not_configured(self) -> None:
+    def test_missing_urlhaus_key_not_configured(self, mock_pt_post) -> None:
         """Assert missing URLhaus key is marked not configured, never no match."""
+        mock_pt_post.side_effect = requests.exceptions.RequestException("Mocked offline")
         response = self.client.post("/", {"url": "https://no-key-test.com/path"}, follow=True)
         self.assertEqual(response.status_code, 200)
 

@@ -16,6 +16,8 @@ from apps.core.types import Assessment, Finding, ParsedURL, Prediction, ThreatLo
 from apps.ml_engine.predict import predict
 from apps.risk_engine.engine import assess
 from apps.threat_intel import service as threat_intel_service
+from apps.url_analyzer.brand import check_brand_similarity
+from apps.url_analyzer.domain_checks import check_dns, check_rdap
 from apps.url_analyzer.lexical import check_lexical
 from apps.url_analyzer.obfuscation import check_obfuscation
 from apps.url_analyzer.parser import parse_url
@@ -55,6 +57,37 @@ def _run_obfuscation(parsed: ParsedURL) -> list[Finding]:
             evidence={"error": "Module execution failed"},
             source="obfuscation",
         )]
+
+
+def _run_brand(parsed: ParsedURL) -> list[Finding]:
+    """Execute brand similarity checks, catching exceptions as unavailable findings."""
+    try:
+        return check_brand_similarity(parsed)
+    except Exception as exc:
+        logger.warning("Brand similarity checks failed: %s", exc)
+        return [Finding(
+            check_name="brand.error", category="heuristic", status="unavailable", severity="info",
+            explanation="Brand similarity checks were unavailable.",
+            evidence={"error": "Module execution failed"}, source="brand",
+        )]
+
+
+def _run_dns_rdap(parsed: ParsedURL) -> list[Finding]:
+    """Execute DNS and RDAP enrichment checks only when ENABLE_DNS_RDAP is True."""
+    if not getattr(settings, "ENABLE_DNS_RDAP", False):
+        return []
+    timeout = float(getattr(settings, "EXTERNAL_TIMEOUT_SECONDS", 5))
+    findings: list[Finding] = []
+    for fn, chk, src in ((check_dns, "dns.records", "dns"), (check_rdap, "rdap.domain_age", "rdap")):
+        try:
+            findings.extend(fn(parsed, timeout=timeout))
+        except Exception as exc:
+            logger.warning("%s check failed: %s", src.upper(), exc)
+            findings.append(Finding(
+                check_name=chk, category="enrichment", status="unavailable", severity="info",
+                explanation=f"{src.upper()} check was unavailable.", source=src,
+            ))
+    return findings
 
 
 def _run_ml(parsed: ParsedURL) -> tuple[Optional[Prediction], list[Finding]]:
@@ -192,10 +225,12 @@ def analyse_url(raw: str) -> Investigation:
 
     lexical_findings = _run_lexical(parsed)
     obfuscation_findings = _run_obfuscation(parsed)
+    brand_findings = _run_brand(parsed)
     ml_pred, ml_findings = _run_ml(parsed)
     lookups, intel_findings = _run_threat_intel(parsed)
+    enrichment_findings = _run_dns_rdap(parsed)
 
-    all_findings = lexical_findings + obfuscation_findings + ml_findings + intel_findings
+    all_findings = lexical_findings + obfuscation_findings + brand_findings + ml_findings + intel_findings + enrichment_findings
     assessment = assess(all_findings)
 
     return _save_investigation(

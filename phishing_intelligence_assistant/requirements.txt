@@ -6,3 +6,4 @@ joblib>=1.4
 tldextract>=5.1
 requests>=2.32
 python-dotenv>=1.0
+dnspython==2.9.2

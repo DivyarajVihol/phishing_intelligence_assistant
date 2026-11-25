@@ -1,5 +1,6 @@
 """Django settings for phishing_intelligence_assistant project."""
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -104,6 +105,10 @@ URLHAUS_AUTH_KEY = os.environ.get("URLHAUS_AUTH_KEY", "")
 # Optional enrichment settings (Phases 12 and 13)
 ENABLE_DNS_RDAP = os.environ.get("ENABLE_DNS_RDAP", "False").lower() in ("true", "1", "yes")
 ENABLE_REDIRECT_CHECK = os.environ.get("ENABLE_REDIRECT_CHECK", "False").lower() in ("true", "1", "yes")
+if "test" in sys.argv:
+    # Force optional outbound network enrichment off during tests regardless of .env
+    ENABLE_DNS_RDAP = False
+    ENABLE_REDIRECT_CHECK = False
 
 # Limits and timeouts
 EXTERNAL_TIMEOUT_SECONDS = int(os.environ.get("EXTERNAL_TIMEOUT_SECONDS", "5"))
