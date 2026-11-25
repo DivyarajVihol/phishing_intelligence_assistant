@@ -42,8 +42,8 @@ An explainable, defensible investigation assistant for suspicious URLs. The assi
 
 ## Tech Stack
 
-- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache, `reportlab` 5.1.1 (PDF).
-- **Analysis & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas 2.3.x, joblib, `dnspython` 2.9.2 (DNS).
+- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache, `reportlab==5.1.1` (PDF).
+- **Analysis & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas 2.3.x, joblib, `dnspython==2.9.2` (DNS).
 - **HTTP & Config**: `requests`, `python-dotenv`.
 - **Frontend**: Django templates, vanilla CSS (custom design tokens), vanilla JavaScript. No external CDNs or UI libraries.
 
@@ -104,7 +104,7 @@ Configure the following variables in your `.env` file (never commit real secrets
 | `ENABLE_URLHAUS` | `True` | Enable URLhaus malware intelligence lookups |
 | `URLHAUS_AUTH_KEY` | *(empty)* | Required Auth-Key for URLhaus API lookups |
 | `ENABLE_DNS_RDAP` | `False` | Feature flag for DNS/RDAP enrichment (optional phase) |
-| `ENABLE_REDIRECT_CHECK` | `False` | Feature flag for HTTP redirect checker (optional phase) |
+| `ENABLE_REDIRECT_CHECK` | `False` | Reserved for the optional redirect checker (Phase 13, not built yet); currently has no effect. |
 | `EXTERNAL_TIMEOUT_SECONDS` | `5` | Network timeout in seconds for outbound calls |
 | `MAX_URL_LENGTH` | `2048` | Maximum accepted length for submitted URLs |
 | `LOOKUP_CACHE_TTL_SECONDS` | `3600` | In-memory lookup cache TTL in seconds |
@@ -120,9 +120,12 @@ Configure the following variables in your `.env` file (never commit real secrets
 
 Datasets are not stored in git. To train or retrain the machine learning model:
 
-1. **Place the raw dataset**:
-   Obtain the PhiUSIIL Phishing URL Dataset CSV and save it to:
-   `ml/data/raw/PhiUSIIL_Phishing_URL_Dataset.csv`
+1. **Place the raw datasets**:
+   - Obtain the PhiUSIIL Phishing URL Dataset CSV (required) and save it to:
+     `ml/data/raw/PhiUSIIL_Phishing_URL_Dataset.csv`
+   - Download the PhishTank verified-online feed (`https://data.phishtank.com/data/online-valid.csv`, using a descriptive `User-Agent`; PhishTank may answer HTTP 429 if asked too often) and save it as:
+     `ml/data/raw/phishtank_online-valid.csv`
+   - If `ml/data/raw/phishtank_online-valid.csv` is missing when preparing data, `prepare_data` skips it and continues using only the PhiUSIIL dataset (with `recent_test` having 0 domains).
 
 2. **Clean and prepare dataset splits**:
    ```powershell
@@ -163,10 +166,10 @@ phishing_intelligence_assistant/
 │   ├── core/           # Shared dataclasses and typing contracts (no Django dependencies)
 │   ├── dashboard/      # Metrics aggregation and dashboard view
 │   ├── ml_engine/      # ML inference and feature row construction
-│   ├── reports/        # Canonical report builder, HTML report view & JSON export
+│   ├── reports/        # Report builder, HTML report view, PDF and JSON exports
 │   ├── risk_engine/    # Heuristic scoring rules and risk assessment engine
 │   ├── threat_intel/   # PhishTank and URLhaus connectors and caching service
-│   └── url_analyzer/   # URL parser, lexical checks, and obfuscation heuristics
+│   └── url_analyzer/   # URL parser, lexical, obfuscation and brand look-alike checks, optional DNS and domain-age checks
 ├── config/             # Django project settings, URLs, and WSGI configuration
 ├── docs/               # Architecture, specification, UI guidelines, and test reports
 ├── ml/
@@ -186,6 +189,7 @@ phishing_intelligence_assistant/
 - **Resilient Network Handling**: All outbound requests enforce strict timeouts (`EXTERNAL_TIMEOUT_SECONDS`). Feeds that timeout or error report as "Unavailable", never "no match".
 - **Separated Evidence**: Threat intelligence matches, heuristic findings, ML predictions, and unavailable checks are displayed in distinct sections.
 - **Secret Isolation**: Credentials and API keys are read only from environment variables, never logged or exposed.
+- **Minimal Outbound Data**: When the optional DNS/RDAP checks are enabled, the registered domain (not the full URL) is sent to the DNS resolver and to `rdap.org`; PhishTank and URLhaus always receive the submitted URL, as the Submit page notice says.
 - **Offline Testing**: Automated test suites are completely isolated from live network resources.
 
 ---
