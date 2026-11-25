@@ -1,10 +1,12 @@
 """Unit tests for ML prediction module."""
+import json
 import tempfile
 import unittest
 
 from apps.core.types import Prediction
 from apps.ml_engine.predict import (
     _DEFAULT_ARTIFACTS_DIR,
+    MODEL_VERSION,
     ModelUnavailable,
     build_row,
     load_model,
@@ -14,8 +16,8 @@ from apps.url_analyzer.features import DOMAIN_FEATURE_NAMES
 from apps.url_analyzer.parser import parse_url
 
 _REAL_ARTIFACTS_EXIST = (
-    (_DEFAULT_ARTIFACTS_DIR / "model-v1.joblib").is_file()
-    and (_DEFAULT_ARTIFACTS_DIR / "model-v1.json").is_file()
+    (_DEFAULT_ARTIFACTS_DIR / f"model-{MODEL_VERSION}.joblib").is_file()
+    and (_DEFAULT_ARTIFACTS_DIR / f"model-{MODEL_VERSION}.json").is_file()
 )
 
 
@@ -35,7 +37,7 @@ class TestPredict(unittest.TestCase):
         expected_label = "phishing_like" if pred.score >= pred.threshold else "benign"
         self.assertEqual(pred.label, expected_label)
         self.assertEqual(pred.model_name, "logistic_regression")
-        self.assertEqual(pred.model_version, "v1")
+        self.assertEqual(pred.model_version, MODEL_VERSION)
 
     def test_missing_artifacts_raises_model_unavailable(self) -> None:
         """Assert missing artifacts folder raises ModelUnavailable."""
@@ -62,10 +64,19 @@ class TestPredict(unittest.TestCase):
 
     @unittest.skipUnless(_REAL_ARTIFACTS_EXIST, "Real artifacts not found")
     def test_json_feature_names_parity(self) -> None:
-        """Assert feature names in model-v1.json equal current DOMAIN_FEATURE_NAMES."""
+        """Assert feature names in model-v2.json equal current DOMAIN_FEATURE_NAMES."""
         _, metadata = load_model()
         self.assertIn("DOMAIN_FEATURE_NAMES", metadata)
         self.assertEqual(metadata["DOMAIN_FEATURE_NAMES"], DOMAIN_FEATURE_NAMES)
+
+    @unittest.skipUnless(_REAL_ARTIFACTS_EXIST, "Real artifacts not found")
+    def test_google_com_score_and_threshold_matches_json(self) -> None:
+        """Assert google.com scores in (0, 1) and threshold matches model-v2.json."""
+        pred = predict(parse_url("https://www.google.com/"))
+        self.assertGreater(pred.score, 0.0)
+        self.assertLess(pred.score, 1.0)
+        meta = json.loads((_DEFAULT_ARTIFACTS_DIR / f"model-{MODEL_VERSION}.json").read_text(encoding="utf-8"))
+        self.assertEqual(pred.threshold, float(meta["threshold"]))
 
     @unittest.skipUnless(_REAL_ARTIFACTS_EXIST, "Real artifacts not found")
     def test_domain_only_predict_gives_same_score(self) -> None:

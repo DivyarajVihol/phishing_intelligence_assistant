@@ -7,6 +7,7 @@ import joblib
 
 from apps.core.types import ParsedURL, Prediction
 
+MODEL_VERSION = "v2"
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_ARTIFACTS_DIR = _PROJECT_ROOT / "ml" / "artifacts"
 _MODEL_CACHE: dict[Path, tuple[Any, dict[str, Any]]] = {}
@@ -29,8 +30,8 @@ def load_model(
     if target_dir in _MODEL_CACHE:
         return _MODEL_CACHE[target_dir]
 
-    joblib_path = target_dir / "model-v1.joblib"
-    json_path = target_dir / "model-v1.json"
+    joblib_path = target_dir / f"model-{MODEL_VERSION}.joblib"
+    json_path = target_dir / f"model-{MODEL_VERSION}.json"
     if not joblib_path.is_file() or not json_path.is_file():
         raise ModelUnavailable(f"Artifact files missing in {target_dir}")
 
@@ -63,7 +64,7 @@ def predict(
     threshold = float(metadata.get("threshold", 0.5))
     label = "phishing_like" if score >= threshold else "benign"
     model_name = str(metadata.get("model_name", "logistic_regression"))
-    model_version = str(metadata.get("version", metadata.get("model_version", "v1")))
+    model_version = str(metadata.get("version", metadata.get("model_version", MODEL_VERSION)))
 
     return Prediction(
         model_name=model_name,
