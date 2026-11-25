@@ -4,6 +4,8 @@ This document provides structured manual verification test cases for the Phishin
 
 > **NEVER-OPEN Rule**: All URLs in this document are strictly defanged. Never visit, browse, or open raw URLs on an unprotected host.
 
+> **Model Version Note**: The first recorded rows below were captured on 19-Nov-2026 using model v1. Model v2 became active on 25-Nov-2026 (for example, `hxxps://www[.]google[.]com/` now scores 12/100). The historical v1 results below are preserved unchanged.
+
 ---
 
 ## How to Run These Tests by Hand

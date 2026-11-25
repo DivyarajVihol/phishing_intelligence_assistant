@@ -22,10 +22,14 @@ An explainable, defensible investigation assistant for suspicious URLs. The assi
   - Non-ASCII characters or punycode (`xn--`) homograph indicators
   - Deep subdomain nesting
   - Recognized brand names in subdomain or path when the registered domain differs
+- **Brand Look-Alike Detection** (`apps/url_analyzer/brand.py`):
+  - Detects look-alike registered domains against about 32 brands, including major Indian banks and payment services.
 - **Threat Intelligence Integrations**:
   - **PhishTank**: Queries phishing submissions and community verification status.
   - **URLhaus**: Queries active malware distribution intelligence (reported strictly as malware intelligence, never conflated with phishing).
-- **Machine Learning Engine**: Domain-level logistic regression classifier (v1) trained on the PhiUSIIL dataset, scoring lexical domain features.
+- **DNS & Domain-Age (RDAP) Enrichment** (`apps/url_analyzer/domain_checks.py`):
+  - Optional DNS record and domain-age (RDAP) checks (OFF by default; enable with `ENABLE_DNS_RDAP=True` in `.env`).
+- **Machine Learning Engine**: Domain-level classifier (model v2) trained on the PhiUSIIL dataset plus PhishTank verified phishing (shared-hosting domains excluded from training), with the decision threshold chosen on validation so about 90% of what it flags is truly phishing.
 - **Explainable Risk Engine**:
   - Deterministic 0–100 risk score and categorical tiers (`High risk`, `Medium risk`, `Low observed risk`, `Inconclusive`).
   - Transparent point breakdown by source category and completed check coverage.
@@ -38,8 +42,8 @@ An explainable, defensible investigation assistant for suspicious URLs. The assi
 
 ## Tech Stack
 
-- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache, `reportlab`.
-- **Analysis & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas 2.3.x, joblib.
+- **Backend**: Python 3.14.x (developed and tested on Python 3.14.4), Django 5.2 LTS, SQLite, LocMemCache, `reportlab` 5.1.1 (PDF).
+- **Analysis & ML**: `urllib.parse`, `tldextract`, scikit-learn, pandas 2.3.x, joblib, `dnspython` 2.9.2 (DNS).
 - **HTTP & Config**: `requests`, `python-dotenv`.
 - **Frontend**: Django templates, vanilla CSS (custom design tokens), vanilla JavaScript. No external CDNs or UI libraries.
 
@@ -130,10 +134,11 @@ Datasets are not stored in git. To train or retrain the machine learning model:
    ```powershell
    python -m ml.training.train
    ```
-   This trains candidate models (Logistic Regression, Random Forest, Dummy Baseline), selects the best performer by PR-AUC, tunes the decision threshold on validation data, and outputs artifacts to `ml/artifacts/`:
-   - `model-v1.joblib`: Serialized scikit-learn pipeline.
-   - `model-v1.json`: Metadata, threshold, feature names, and performance metrics.
-   - `evaluation.md`: Detailed evaluation report including confusion matrix and error analysis.
+   This trains candidate models, selects the best performer by PR-AUC, tunes the decision threshold on validation data (so about 90% of what it flags is truly phishing), and outputs active v2 artifacts to `ml/artifacts/`:
+   - `model-v2.joblib`: Serialized scikit-learn pipeline (trained on PhiUSIIL plus PhishTank verified phishing, with shared-hosting domains excluded).
+   - `model-v2.json`: Metadata, threshold, feature names, and performance metrics.
+   - `evaluation-v2.md`: Detailed evaluation report including confusion matrix and error analysis.
+   - `model-v1.joblib`, `model-v1.json`, `evaluation.md`: Original v1 artifacts kept for history.
 
 ---
 
@@ -145,7 +150,7 @@ Execute the automated test suite across all apps and ML modules:
 python manage.py test apps ml
 ```
 
-All network calls are strictly mocked in tests. Automated tests never connect to external servers or feeds.
+All network calls are strictly mocked in tests, and tests are forced to run with the network flags off. Automated tests never connect to external servers or feeds.
 
 ---
 
@@ -187,10 +192,10 @@ phishing_intelligence_assistant/
 
 ## Known Limitations
 
-- **v1 ML Model Scope**: The v1 model evaluates lexical features derived exclusively from the registered domain name. It cannot identify path-based phishing on shared hosting platforms (e.g. `vercel.app`, `firebaseapp.com`) and may flag unfamiliar domains. It serves as a supporting indicator contributing at most 30 points to the risk score; a v2 retrain incorporating PhishTank data is planned.
-- **Popular Domain False Positives**: The v1 model can also wrongly flag popular domains (for example `google.com` scored 0.78), which is why ML adds at most 30 points and never decides the level alone.
+- **v2 ML Model Scope**: The active v2 model evaluates lexical features derived exclusively from the registered domain name (mostly an ending signal, and weak on `.com`). At its strict threshold, it catches about 40% of phishing on test data and about 72% of recent PhishTank domains. It cannot identify path-based phishing on shared hosting platforms (e.g. `vercel.app`, `firebaseapp.com`), and serves only as a supporting indicator contributing at most 30 points to the risk score.
+- **Popular Domain False Positives**: The v2 model still flags `google.com` at about 0.86 (adding about 12 points), which is why ML adds at most 30 points and never decides the risk level alone.
 - **Threat Intelligence Coverage**: Lookups cover only URLs previously identified and listed in PhishTank or URLhaus. A "no match" finding indicates absence from the database, not that a URL is benign. URLhaus represents malware intelligence, not phishing.
-- **Optional Modules**: DNS/RDAP domain enrichment and controlled redirect following (optional Phases 12 and 13) are not implemented in the current build.
+- **Optional Modules**: Phase 12 (optional DNS record and RDAP domain-age enrichment) is built but OFF by default (`ENABLE_DNS_RDAP=False`). Phase 13 (controlled HTTP redirect checker) is NOT built yet.
 - **Timezone**: All displayed analysis and query timestamps are normalized and rendered in UTC.
 - **History Date Filtering**: History date input pickers conform to the host browser's regional date format.
 
