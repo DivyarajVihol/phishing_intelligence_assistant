@@ -108,3 +108,25 @@ class TestPdfReport(TestCase):
         json_resp = self.client.get(reverse("report_json", args=[inv.id]))
         self.assertEqual(json_resp.status_code, 200)
         self.assertEqual(json.loads(json_resp.content.decode())["report_id"], inv.id)
+
+    def test_pdf_text_lines_use_website_wording_and_readable_labels(self) -> None:
+        """Assert PDF text lines use website wording, Points Breakdown heading, readable labels, and years."""
+        inv = _create_investigation()
+        lk = inv.threat_lookups.first()
+        lk.source_record_id = "99999"
+        lk.save()
+        FindingRecord.objects.create(
+            investigation=inv, check_name="rdap.domain_age", category="enrichment",
+            status="clear", severity="info", explanation="Domain age is 10780 days.",
+            evidence={"age_days": 10780}, source="rdap",
+        )
+        report = build_report(inv)
+        joined = "\n".join(extract_report_text_lines(report))
+        self.assertIn("No match found in this source at the time of lookup.", joined)
+        self.assertIn("Reported to this source but not confirmed as phishing", joined)
+        self.assertIn("Points Breakdown", joined)
+        self.assertIn("Scheme assumed: No", joined)
+        self.assertIn("IP host: No", joined)
+        self.assertIn("Domain age is 10780 days (about 29 years).", joined)
+        for forbidden in ("no_match", "scheme_assumed", "is_ip_host", "False"):
+            self.assertNotIn(forbidden, joined)
