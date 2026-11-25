@@ -6,8 +6,11 @@ from pathlib import Path
 
 from ml.training.prepare_data import (
     assign_split,
+    assign_splits_with_recent,
     convert_label,
     deduplicate_domain_labels,
+    exclude_shared_hosting,
+    load_phishtank_rows,
     parse_rows,
     prepare_dataset,
     remove_conflicted_domains,
@@ -134,3 +137,64 @@ class TestPrepareData(unittest.TestCase):
                 self.assertIn(r["split"], {"train", "validation", "test"})
                 self.assertEqual(r["source"], "phiusiil")
                 self.assertEqual(r["model_text"], r["registered_domain"])
+
+    def test_phishtank_rows_added_with_source(self) -> None:
+        """Assert PhishTank CSV rows are loaded with source='phishtank' and label=1."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            raw_csv, pt_csv, out_csv = tmp_path / "raw.csv", tmp_path / "pt.csv", tmp_path / "dataset.csv"
+            with open(raw_csv, mode="w", encoding="utf-8-sig", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["URL", "label"])
+                w.writerow(["https://www.benign-bank.org", "1"])
+            with open(pt_csv, mode="w", encoding="utf-8", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["phish_id", "url", "phish_detail_url", "submission_time", "verified", "verification_time", "online", "target"])
+                w.writerow(["9001", "https://evil-phish.xyz/login", "", "2026-11-18T00:00:00+00:00", "yes", "", "yes", "Other"])
+            result = prepare_dataset(raw_csv, out_csv, pt_csv)
+            pt_rows = [r for r in result if r["source"] == "phishtank"]
+            self.assertEqual(len(pt_rows), 1)
+            self.assertEqual(pt_rows[0]["label"], 1)
+            self.assertEqual(pt_rows[0]["source_id"], "9001")
+            self.assertEqual(pt_rows[0]["collected_at"], "2026-11-18T00:00:00+00:00")
+
+    def test_shared_hosting_domains_excluded(self) -> None:
+        """Assert shared-hosting domains like alice.vercel.app and bob.web.app are excluded."""
+        rows = [
+            {"url": "https://alice.vercel.app/login", "label": 1, "source": "phishtank"},
+            {"url": "https://bob.web.app/home", "label": 0, "source": "phiusiil"},
+            {"url": "https://normal-site.com/page", "label": 0, "source": "phiusiil"},
+        ]
+        parsed, failures = parse_rows(rows)
+        self.assertEqual(failures, 0)
+        kept, excluded = exclude_shared_hosting(parsed)
+        self.assertEqual(excluded, 2)
+        self.assertEqual([r["registered_domain"] for r in kept], ["normal-site.com"])
+
+    def test_no_domain_in_two_splits_with_recent_holdout(self) -> None:
+        """Assert every registered domain maps to exactly one split including recent_test."""
+        rows = [
+            {"registered_domain": f"pt-{i}.xyz", "source": "phishtank", "collected_at": f"2026-11-{10 + i:02d}T00:00:00+00:00"}
+            for i in range(10)
+        ] + [
+            {"registered_domain": f"benign-{i}.org", "source": "phiusiil", "collected_at": ""}
+            for i in range(10)
+        ]
+        assign_splits_with_recent(rows)
+        seen: dict[str, set[str]] = {}
+        for r in rows:
+            seen.setdefault(r["registered_domain"], set()).add(r["split"])
+        self.assertTrue(all(len(s) == 1 for s in seen.values()))
+
+    def test_recent_holdout_removed_from_train_and_validation(self) -> None:
+        """Assert newest 10% PhishTank domains are in recent_test and absent from train/validation."""
+        rows = [
+            {"registered_domain": f"pt-{i}.xyz", "source": "phishtank", "collected_at": f"2026-11-{10 + i:02d}T00:00:00+00:00"}
+            for i in range(10)
+        ]
+        recent = assign_splits_with_recent(rows)
+        self.assertEqual(recent, {"pt-9.xyz"})
+        train_val = {r["registered_domain"] for r in rows if r["split"] in {"train", "validation"}}
+        self.assertNotIn("pt-9.xyz", train_val)
+        recent_rows = [r for r in rows if r["split"] == "recent_test"]
+        self.assertEqual([r["registered_domain"] for r in recent_rows], ["pt-9.xyz"])

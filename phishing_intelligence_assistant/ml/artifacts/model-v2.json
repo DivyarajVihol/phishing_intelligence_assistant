@@ -1,0 +1,91 @@
+{
+  "model_name": "logistic_regression",
+  "version": "v2",
+  "trained_at": "2026-11-25T08:50:07.958208+00:00",
+  "python_version": "3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]",
+  "sklearn_version": "1.9.1",
+  "numpy_version": "2.5.5",
+  "DOMAIN_FEATURE_NAMES": [
+    "length",
+    "digit_count",
+    "digit_ratio",
+    "hyphen_count",
+    "dot_count",
+    "char_entropy",
+    "longest_digit_run",
+    "longest_consonant_run",
+    "unique_char_ratio"
+  ],
+  "threshold": 0.777116611407323,
+  "input_type": "list of registered-domain strings",
+  "dataset_summary": {
+    "total_rows": 179790,
+    "rows_per_split": {
+      "train": 125323,
+      "validation": 27077,
+      "test": 26891,
+      "recent_test": 499
+    },
+    "rows_per_class": {
+      "benign": 131928,
+      "phishing": 47862
+    },
+    "dataset_csv_sha256": "95a5d13499e7ff57209916e73cf405cb9c4cdc97c3d3f34246a075c4af022e51"
+  },
+  "metrics": {
+    "validation": {
+      "accuracy": 0.8241311814455072,
+      "precision": 0.9001280409731114,
+      "recall": 0.3872211511980171,
+      "f1": 0.5414981706142885,
+      "pr_auc": 0.7363279833632461,
+      "roc_auc": 0.8358056723119035,
+      "confusion_matrix": [
+        [
+          19503,
+          312
+        ],
+        [
+          4450,
+          2812
+        ]
+      ]
+    },
+    "test": {
+      "accuracy": 0.8309843442043806,
+      "precision": 0.8966613672496025,
+      "recall": 0.4005681818181818,
+      "f1": 0.5537555228276878,
+      "pr_auc": 0.7354493875948052,
+      "roc_auc": 0.8385237419342282,
+      "confusion_matrix": [
+        [
+          19526,
+          325
+        ],
+        [
+          4220,
+          2820
+        ]
+      ]
+    },
+    "recent_test": {
+      "accuracy": 0.717434869739479,
+      "precision": 1.0,
+      "recall": 0.717434869739479,
+      "f1": 0.8354725787631272,
+      "pr_auc": 0.0,
+      "roc_auc": 0.0,
+      "confusion_matrix": [
+        [
+          0,
+          0
+        ],
+        [
+          141,
+          358
+        ]
+      ]
+    }
+  }
+}
